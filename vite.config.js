@@ -7,8 +7,15 @@ import { defineConfig } from "vitest/config";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // test: {
+  //   name: { label: "unit", color: "green" },
+  //   environment: "node",
+  // },
   test: {
     name: { label: "unit", color: "green" },
-    environment: "node",
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/tests/setup.js',
+    css: true,
   },
 });

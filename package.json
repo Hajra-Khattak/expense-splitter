@@ -13,20 +13,29 @@
     "format:check": "prettier --check .",
     "emulators": "firebase emulators:start --only auth,firestore",
     "emulators:persist": "firebase emulators:start --only auth,firestore --import=./emulator-data --export-on-exit",
-     "test": "vitest",
-  "test:run": "vitest run",
-  "test:coverage": "vitest run --coverage"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@hookform/resolvers": "^7.0.6",
     "@tailwindcss/vite": "^4.3.5",
     "firebase": "^13.3.0",
+    "lucide-react": "^1.72.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "react-hook-form": "^7.92.0",
     "react-router-dom": "^7.18.5",
-    "tailwindcss": "^4.3.5"
+    "recharts": "^3.10.1",
+    "sonner": "^2.0.8",
+    "tailwindcss": "^4.3.5",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.10",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
@@ -37,6 +46,7 @@
     "eslint-plugin-react-refresh": "^0.5.7",
     "firebase-tools": "^15.36.0",
     "globals": "^17.13.0",
+    "jsdom": "^31.0.1",
     "prettier": "^3.10.1",
     "vite": "^8.3.6",
     "vitest": "^5.1.0"
