@@ -8,6 +8,9 @@ import Signup from "./pages/Authentication/Signup";
 import ForgotPassword from "./pages/Authentication/ForgotPassword";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Profile from "./pages/Profile/Profile";
+import CreateGroup from "./pages/Groups/CreateGroup";
+import TabPlaceholder from "./pages/TabPlaceholder";
+import GroupPage from "./pages/GroupPage";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
@@ -40,11 +43,19 @@ function App() {
 
         {/* Only for logged-in people */}
         <Route element={<ProtectedRoute />}>
+
           <Route path="/app" element={<AppLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="groups/new" element={<CreateGroup />} />
             {/* later: groups/:groupId, groups/:groupId/balances, ... */}
+            <Route path="groups/:groupId" element={<GroupPage />}>
+              <Route index element={<Navigate to="expenses" replace />} />
+              <Route path="expenses" element={<TabPlaceholder title="Expenses" />} />
+              {/* same line for balances, settle-up, members, activity, stats */}
+            </Route>
           </Route>
+
           {/* later: /join/:code */}
         </Route>
 

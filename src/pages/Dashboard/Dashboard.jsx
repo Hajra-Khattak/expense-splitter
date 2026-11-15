@@ -13,6 +13,7 @@ import {
 } from 'recharts'
 import { useAuth } from '../../hooks/useAuth'
 import { useTheme } from '../../hooks/useTheme'
+import { useGroups } from '../../hooks/useGroups'
 
 /* ---------- helpers ---------- */
 // All money is stored in minor units (12.50 -> 1250). Format only for display.
@@ -25,11 +26,12 @@ const formatMoney = (minor, currency = 'PKR') =>
   }).format(minor / 100)
 
 /* ---------- mock data (replace with hooks later) ---------- */
-const stats = [
+// Money stats, chart, expenses and payments stay mock until Phases 4 and 5.
+// Groups are real now: they come from useGroups().
+const moneyStats = [
   { label: 'Net balance', value: 135000, hint: 'Across all groups', tone: 'good' },
   { label: 'You are owed', value: 210000, hint: 'From 3 people', tone: 'good' },
   { label: 'You owe', value: 75000, hint: 'To 2 people', tone: 'bad' },
-  { label: 'Active groups', value: 4, hint: '1 archived', tone: 'plain' },
 ]
 
 const monthly = [
@@ -47,12 +49,6 @@ const categories = [
   { name: 'Food', value: 650000, color: '#a3e635' },
   { name: 'Transport', value: 300000, color: '#2dd4bf' },
   { name: 'Other', value: 250000, color: '#047857' },
-]
-
-const groups = [
-  { id: 'g1', name: 'Flat 12B', members: ['A', 'S', 'H'], balance: 170000 },
-  { id: 'g2', name: 'Murree Trip', members: ['A', 'M', 'S', 'Z'], balance: -75000 },
-  { id: 'g3', name: 'Office Lunch', members: ['H', 'M'], balance: 40000 },
 ]
 
 const expenses = [
@@ -80,16 +76,6 @@ const good = 'text-emerald-600 dark:text-emerald-300'
 const bad = 'text-rose-600 dark:text-rose-400'
 
 /* ---------- small pieces ---------- */
-function Avatar({ letter, className = '' }) {
-  return (
-    <div
-      className={`flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-emerald-100 text-[10px] font-bold text-emerald-700 dark:border-[#0c1f17] ${className}`}
-    >
-      {letter}
-    </div>
-  )
-}
-
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
@@ -102,12 +88,106 @@ function ChartTooltip({ active, payload, label }) {
   )
 }
 
+// Real groups list: handles loading, error and empty states.
+function GroupsPanel({ groups, loading, error, uid }) {
+  if (loading) {
+    return (
+      <ul className="space-y-3" aria-busy="true" aria-label="Loading groups">
+        {[0, 1, 2].map((i) => (
+          <li key={i} className="h-16 animate-pulse rounded-xl bg-emerald-100/60 dark:bg-white/5" />
+        ))}
+      </ul>
+    )
+  }
+
+  if (error) {
+    return (
+      <p
+        role="alert"
+        className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300"
+      >
+        {error.code === 'failed-precondition'
+          ? 'This list needs a one-time Firestore index. Open the browser console (F12), click the link in the error, create the index, and wait a few minutes.'
+          : 'Could not load your groups. Please refresh and try again.'}
+      </p>
+    )
+  }
+
+  if (groups.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-emerald-200 p-6 text-center dark:border-white/10">
+        <p className="text-sm font-medium text-gray-900 dark:text-white">You are not in any group yet</p>
+        <p className={`mt-1 text-xs ${muted}`}>Create one to start splitting expenses.</p>
+        <Link
+          to="/app/groups/new"
+          className="mt-4 inline-block rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+        >
+          Create your first group
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <ul className="space-y-3">
+      {groups.map((g) => {
+        const count = g.memberIds.length
+        return (
+          <li key={g.id}>
+            <Link
+              to={`/app/groups/${g.id}`}
+              className={`flex items-center justify-between gap-3 p-3 transition hover:bg-emerald-50 dark:hover:bg-white/[0.06] ${row}`}
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{g.name}</p>
+                <p className={`text-xs ${muted}`}>
+                  {count} member{count === 1 ? '' : 's'} · {g.currency}
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                {g.createdBy === uid && (
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                    Admin
+                  </span>
+                )}
+                {g.archived && (
+                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-600 dark:bg-white/10 dark:text-green-100">
+                    Archived
+                  </span>
+                )}
+              </div>
+            </Link>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 /* ---------- page ---------- */
 export default function Dashboard() {
   const { user } = useAuth()
   const { isDark } = useTheme()
+  const { groups, loading: groupsLoading, error: groupsError } = useGroups()
+
   const firstName = user?.displayName?.split(' ')[0] || 'there'
   const totalSpent = categories.reduce((sum, c) => sum + c.value, 0)
+
+  // Real group numbers
+  const activeCount = groups.filter((g) => !g.archived).length
+  const archivedCount = groups.length - activeCount
+  const createdCount = groups.filter((g) => g.createdBy === user?.uid).length
+
+  const stats = [
+    ...moneyStats,
+    {
+      label: 'Active groups',
+      value: groupsLoading ? '...' : activeCount,
+      hint: groupsLoading ? 'Loading...' : `${createdCount} created by you · ${archivedCount} archived`,
+      tone: 'plain',
+      isCount: true,
+    },
+  ]
 
   // Recharts draws with SVG attributes, so it can't use Tailwind dark: classes.
   const axisColor = isDark ? '#6ee7b7' : '#047857'
@@ -127,16 +207,18 @@ export default function Dashboard() {
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             type="button"
-            className="rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-white/10 dark:bg-transparent dark:text-emerald-300 dark:hover:bg-white/5"
+            disabled
+            title="Coming soon"
+            className="rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-transparent dark:text-emerald-300 dark:hover:bg-white/5"
           >
             Join group
           </button>
-          <button
-            type="button"
+          <Link
+            to="/app/groups/new"
             className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
           >
             New group
-          </button>
+          </Link>
         </div>
       </header>
 
@@ -153,7 +235,7 @@ export default function Dashboard() {
                     s.tone === 'good' ? good : s.tone === 'bad' ? bad : 'text-gray-900 dark:text-white'
                   }`}
                 >
-                  {s.label === 'Active groups' ? s.value : formatMoney(s.value)}
+                  {s.isCount ? s.value : formatMoney(s.value)}
                 </p>
                 <p className="mt-1 text-xs text-gray-400 dark:text-green-300/50">{s.hint}</p>
               </div>
@@ -277,36 +359,20 @@ export default function Dashboard() {
             </ul>
           </section>
 
+          {/* Real groups from Firestore */}
           <section className={card}>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className={title}>Your groups</h2>
-              <Link to="/app" className={link}>Show more</Link>
+              <h2 className={title}>
+                Your groups
+                {!groupsLoading && !groupsError && ` (${groups.length})`}
+              </h2>
             </div>
-            <ul className="space-y-3">
-              {groups.map((g) => (
-                <li key={g.id}>
-                  <Link
-                    to={`/app/groups/${g.id}`}
-                    className={`flex items-center justify-between gap-3 p-3 transition hover:bg-emerald-50 dark:hover:bg-white/[0.06] ${row}`}
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{g.name}</p>
-                      <div className="mt-2 flex -space-x-2">
-                        {g.members.map((m, i) => (
-                          <Avatar key={`${g.id}-${i}`} letter={m} />
-                        ))}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-semibold ${g.balance >= 0 ? good : bad}`}>
-                        {g.balance >= 0 ? '+' : '-'}{formatMoney(Math.abs(g.balance))}
-                      </p>
-                      <p className={`text-xs ${muted}`}>{g.balance >= 0 ? 'you are owed' : 'you owe'}</p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <GroupsPanel
+              groups={groups}
+              loading={groupsLoading}
+              error={groupsError}
+              uid={user?.uid}
+            />
           </section>
         </div>
       </div>

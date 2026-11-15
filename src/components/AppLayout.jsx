@@ -5,6 +5,7 @@ import UserMenu from './UserMenu'
 
 const icons = {
   home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z',
+  plus: 'M12 5v14M5 12h14',
   user: 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5Z',
 }
 
@@ -19,6 +20,7 @@ function Icon({ name }) {
 // later: Groups, Balances, Stats
 const navItems = [
   { to: '/app', label: 'Overview', icon: 'home', end: true },
+  { to: '/app/groups/new', label: 'New group', icon: 'plus' },
   { to: '/app/profile', label: 'Profile', icon: 'user' },
 ]
 

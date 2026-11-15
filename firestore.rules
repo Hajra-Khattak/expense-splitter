@@ -1,8 +1,78 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // get() sees the database BEFORE the write. Use it for existing groups.
+    function isMember(groupId) {
+      return signedIn()
+        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+    }
+
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /groups/{groupId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.memberIds;
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(
+             ['name', 'description', 'currency', 'createdBy', 'createdAt', 'archived', 'inviteCode', 'memberIds'])
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid]
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.archived == false
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 40
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 200
+        && request.resource.data.currency in ['PKR', 'USD', 'EUR', 'GBP', 'AED', 'SAR', 'INR']
+        && request.resource.data.inviteCode is string
+        && request.resource.data.inviteCode.size() == 8;
+
+      allow update, delete: if false; // added in later tasks
+
+      match /members/{memberId} {
+        allow read: if isMember(groupId);
+
+        // Same batch as the group: the group does not exist yet, so get() would fail.
+        // getAfter() reads the state as it will be once the batch commits.
+        allow create: if signedIn()
+          && memberId == request.auth.uid
+          && request.resource.data.role == 'admin'
+          && getAfter(/databases/$(database)/documents/groups/$(groupId)).data.createdBy == request.auth.uid;
+
+        allow update, delete: if false;
+      }
+
+      match /activity/{activityId} {
+        allow read: if isMember(groupId);
+
+        allow create: if signedIn()
+          && request.resource.data.actorId == request.auth.uid
+          && request.auth.uid in getAfter(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+
+        allow update, delete: if false;
+      }
+    }
+
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+
+      // The group exists by now (step 2), so get() is correct here.
+      // A second set() on an existing code counts as an update, which is denied.
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.createdBy == request.auth.uid
+        && get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.inviteCode == code;
+
+      allow update, delete: if false;
     }
   }
 }
