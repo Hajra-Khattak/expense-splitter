@@ -1,4 +1,12 @@
-import { collection, doc, getDoc, serverTimestamp, setDoc, writeBatch } from "firebase/firestore";
+import {
+  arrayUnion,
+  collection,
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+  writeBatch,
+} from "firebase/firestore";
 import { db } from "./firebase";
 import { generateInviteCode } from "../utils/inviteCode";
 
@@ -58,6 +66,7 @@ export async function createGroup(user, { name, description, currency }) {
   try {
     await setDoc(doc(db, "invites", inviteCode), {
       groupId: groupRef.id,
+      groupName: name, // non-members cannot read the group doc, so the join page needs this copy
       createdBy: user.uid,
       createdAt: serverTimestamp(),
     });
@@ -67,4 +76,53 @@ export async function createGroup(user, { name, description, currency }) {
   }
 
   return { groupId: groupRef.id, inviteSaved };
+}
+
+// Reads the invite doc for the join page. Returns null when the code does not exist.
+export async function getInvite(rawCode) {
+  const code = rawCode.trim().toUpperCase();
+  const snap = await getDoc(doc(db, "invites", code));
+  if (!snap.exists()) return null;
+  const { groupId, groupName } = snap.data();
+  return { code, groupId, groupName: groupName ?? null };
+}
+
+// One batch: add the uid to memberIds, create the member doc, write an activity entry.
+// The rules check the invite code that is sent inside the member doc.
+export async function joinGroup(user, rawCode) {
+  const invite = await getInvite(rawCode);
+  if (!invite) {
+    const err = new Error("Invalid invite link");
+    err.code = "invalid-invite";
+    throw err;
+  }
+
+  const { groupId, code } = invite;
+  const displayName = user.displayName || user.email;
+
+  const groupRef = doc(db, "groups", groupId);
+  const memberRef = doc(db, "groups", groupId, "members", user.uid);
+  const activityRef = doc(collection(db, "groups", groupId, "activity"));
+
+  const batch = writeBatch(db);
+
+  batch.update(groupRef, { memberIds: arrayUnion(user.uid) });
+
+  batch.set(memberRef, {
+    name: displayName,
+    role: "member",
+    joinedAt: serverTimestamp(),
+    inviteCode: code, // proof for the rules
+  });
+
+  batch.set(activityRef, {
+    type: "member_joined",
+    actorId: user.uid,
+    targetId: user.uid,
+    summary: `${displayName} joined the group`,
+    createdAt: serverTimestamp(),
+  });
+
+  await batch.commit();
+  return groupId;
 }

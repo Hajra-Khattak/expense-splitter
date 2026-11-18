@@ -1,0 +1,6 @@
+// "hajra p" -> "HP". If you already have utils/getInitials, you can use that instead.
+export function initials(name = "") {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}

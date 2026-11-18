@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
 import ThemeToggle from './ThemeToggle'
 import UserMenu from './UserMenu'
+import { useAuth } from '../hooks/useAuth'
+import { ensureProfile } from '../services/friendService'
 
 const icons = {
   home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z',
   plus: 'M12 5v14M5 12h14',
+  users: 'M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.7 0-6 1.3-6 4v2h12v-2c0-2.7-3.3-4-6-4Zm8 0c-.3 0-.6 0-1 .1 1.2.9 2 2.1 2 3.9v2h6v-2c0-2.7-3.3-4-7-4Z',
   user: 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5Z',
 }
 
@@ -21,6 +24,7 @@ function Icon({ name }) {
 const navItems = [
   { to: '/app', label: 'Overview', icon: 'home', end: true },
   { to: '/app/groups/new', label: 'New group', icon: 'plus' },
+  { to: '/app/friends', label: 'Friends', icon: 'users' },
   { to: '/app/profile', label: 'Profile', icon: 'user' },
 ]
 
@@ -84,6 +88,16 @@ export default function AppLayout() {
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [open])
+
+  const { user } = useAuth()
+const { uid, displayName, email, photoURL } = user ?? {}
+
+useEffect(() => {
+  if (!uid) return
+  ensureProfile({ uid, displayName, email, photoURL }).catch((err) =>
+    console.error('profile sync failed', err.code, err.message)
+  )
+}, [uid, displayName, email, photoURL])
 
   return (
     <div className="min-h-screen bg-green-50 text-gray-800 dark:bg-[#06150f] dark:text-green-50">
