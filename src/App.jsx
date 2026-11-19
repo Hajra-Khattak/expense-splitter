@@ -18,6 +18,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
 import AppLayout from "./components/AppLayout";
 import MembersTab from "./components/Group/MembersTab";
+import SettingsTab from "./components/Group/SettingsTab";
 import TabPlaceholder from "./pages/TabPlaceholder";
 import { useTheme } from "./hooks/useTheme";
 
@@ -63,8 +64,10 @@ function App() {
 
             <Route path="groups/:groupId" element={<GroupPage />}>
               <Route index element={<Navigate to="expenses" replace />} />
-              <Route path="expenses" element={<TabPlaceholder title="Expenses" />} />
+              <Route path="expenses" element={<TabPlaceholder title="Expenses" />} 
+              />
               <Route path="members" element={<MembersTab />} />
+              <Route path="settings" element={<SettingsTab />} />
               {PLACEHOLDER_TABS.map(([path, title]) => (
                 <Route key={path} path={path} element={<TabPlaceholder title={title} />} />
               ))}

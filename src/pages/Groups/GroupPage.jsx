@@ -1,7 +1,9 @@
 import { Link, NavLink, Outlet, useParams } from "react-router";
+import { useAuth } from "../../hooks/useAuth";
 import { useGroup } from "../../hooks/useGroup";
+import { useMembers } from "../../hooks/useMembers";
 
-const TABS = [
+const BASE_TABS = [
   ["expenses", "Expenses"],
   ["balances", "Balances"],
   ["settle-up", "Settle Up"],
@@ -12,7 +14,10 @@ const TABS = [
 
 export default function GroupPage() {
   const { groupId } = useParams();
+  const { user } = useAuth();
   const { group, loading, error } = useGroup(groupId);
+  // Loaded once here and shared with the tabs through the Outlet context
+  const { members, loading: membersLoading, error: membersError } = useMembers(groupId);
 
   if (loading) {
     return <p className="text-sm text-gray-500 dark:text-green-300/70">Loading group...</p>;
@@ -31,6 +36,13 @@ export default function GroupPage() {
     return <p className="text-sm text-gray-500 dark:text-green-300/70">Group not found.</p>;
   }
 
+  const me = members.find((m) => m.id === user?.uid);
+  const myRole = me?.role;
+  const isAdmin = myRole === "admin";
+
+  // Settings is only for admins
+  const tabs = isAdmin ? [...BASE_TABS, ["settings", "Settings"]] : BASE_TABS;
+
   return (
     <div className="mx-auto max-w-4xl">
       <Link
@@ -46,11 +58,20 @@ export default function GroupPage() {
         <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-green-300/70">{group.description}</p>
       )}
 
+      {group.archived && (
+        <p
+          role="status"
+          className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200"
+        >
+          This group is archived. It is read-only until an admin unarchives it.
+        </p>
+      )}
+
       <nav
         aria-label="Group sections"
         className="mt-6 flex gap-2 overflow-x-auto border-b border-gray-200 pb-3 dark:border-white/10"
       >
-        {TABS.map(([path, text]) => (
+        {tabs.map(([path, text]) => (
           <NavLink
             key={path}
             to={path}
@@ -67,7 +88,7 @@ export default function GroupPage() {
         ))}
       </nav>
 
-      <Outlet context={{ group }} />
+      <Outlet context={{ group, members, membersLoading, membersError, isAdmin, myRole }} />
     </div>
   );
 }

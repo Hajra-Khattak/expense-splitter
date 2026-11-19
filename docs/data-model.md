@@ -54,7 +54,7 @@ Written by: `createGroup` (creator, role admin), later `joinGroup` and `leaveGro
 | Field | Type | Notes |
 | --- | --- | --- |
 | name | string | Copy of the display name when joining |
-| role | string | `admin` or `member` |
+| role | string | `admin` or `member`. This is the only place that says who is an admin |
 | joinedAt | timestamp | |
 | inviteCode | string | Only on members who joined by link. Proof of the invite for the rules; not shown in the UI |
 
@@ -75,7 +75,7 @@ Written by: every service that changes the group. Never edited or deleted.
 | summary | string | Readable sentence, built when the entry is written |
 | createdAt | timestamp | |
 
-Types: `group_created`, `member_joined`, `member_left`, `expense_added`, `expense_edited`, `expense_deleted`, `settlement_added`, `group_renamed`, `group_archived`.
+Types: `group_created`, `group_renamed`, `group_archived`, `group_unarchived`, `member_joined`, `member_added`, `member_removed`, `member_left`, `role_changed`, `expense_added`, `expense_edited`, `expense_deleted`, `settlement_added`.
 
 ### groups/{groupId}/expenses/{expenseId}
 Written by: `expenseService` (Phase 4).
@@ -160,12 +160,39 @@ The first run of the dashboard query logs an error with a link that creates the 
 
 ## Who can write what
 
-- **groups:** read if your uid is in `memberIds`. Create if `createdBy` is you and `memberIds` is exactly `[you]`. Update only to join: a non-member adds their own uid to `memberIds`, in the same batch as their member doc (`existsAfter`). No delete.
-- **members:** read by members. Create your own doc either as `admin` (creator, same batch as the group, `getAfter`) or as `member` with the group's `inviteCode` (join, same batch as the `memberIds` update).
-- **activity:** read by members. Create only with your own `actorId`. Never update or delete.
-- **profiles, emailLookup:** `get` for signed-in users, never `list`. You write only your own.
-- **friendships:** read by the two people. Create as `pending` by the sender. Only the other person may accept. Either may delete.
-- **invites:** `get` for signed-in users, never `list`. Create if `createdBy` is you and the group is yours. Never update or delete.
+Everything not listed here is **denied** (the last rule in `firestore.rules` closes all other paths).
+
+| Path | Read | Create | Update | Delete |
+| --- | --- | --- | --- | --- |
+| `users/{uid}` | the owner | the owner | the owner | the owner |
+| `profiles/{uid}` | `get` by anyone signed in, no `list` | the owner | the owner | never |
+| `emailLookup/{email}` | `get` by anyone signed in, no `list` | the owner of that email | the owner | never |
+| `friendships/{pair}` | the two people | the sender, as `pending` | only the other person, to `accepted` | either person |
+| `groups/{id}` | members | the creator, with `memberIds == [creator]` | **admin:** name, description, archived (an archived group can only be unarchived). **Join or add:** exactly one uid appended. **Leave or remove:** exactly one uid removed | never |
+| `members/{uid}` | members | creator as admin (same batch as the group); join as member with the invite code; admin adds an accepted friend | **admin only, `role` only** | a plain member deletes themselves; an admin deletes a plain member |
+| `activity/{id}` | members | as yourself (`actorId`), if you are a member before or after the batch | never | never |
+| `expenses`, `settlements` | members | not yet (Phase 4 and 5) | not yet | not yet |
+| `invites/{code}` | `get` by anyone signed in, no `list` | the creator of the group | an admin, `groupName` only | never |
+
+Rules the batches rely on:
+
+- **Joining or adding** appends exactly one uid to `memberIds` and creates that person's member doc in the same batch (`existsAfter`). Either I join myself with the code inside my member doc, or an admin adds one of their accepted friends. Both are blocked while the group is archived.
+- **Leaving or removing** removes exactly one uid. Either I delete my own member doc in the same batch, or an admin removes someone else.
+- **Admins are never removed or left behind by accident:** the member doc can only be deleted while its role is `member`. An admin must be made a member first (the Members tab does that for leaving).
+
+## Balance checks (client only)
+
+Removing a member and leaving a group are allowed only when that person's balance is 0. The balance is computed in the browser from the group's expenses and settlements (`utils/memberBalance.js`, to be replaced by your tested `balances.js`). Security rules cannot compute it, so a hand-made request could skip the check. This is a known limit.
+
+## Testing the rules
+
+`tests/rules/firestore.rules.test.js` runs against the Firestore emulator with `@firebase/rules-unit-testing`:
+
+```
+npm run test:rules
+```
+
+It covers: deny by default, an outsider is denied everything, a member can read but not do admin actions, an admin can edit and manage roles, create, join, add a friend, remove, leave, own profile only, and friendships. Run it after every change to `firestore.rules`, and publish the rules only when it passes.
 
 ## Decisions and limits
 
@@ -175,5 +202,9 @@ The first run of the dashboard query logs an error with a link that creates the 
 - **Friends.** Added in three ways: friend link, exact email, or the Add friend button on a group member. The other person must accept. Names are copied into the friendship doc, so a rename is not reflected until a later update.
 - **Dashboard ordering in the query**, with a composite index.
 - **No stored balances.** They would drift, and rules could not stop one member from editing another's balance.
-- **One admin (`createdBy`)** until an admin-transfer feature exists, so there is no `admins` array.
+- **Admin = role on the member doc.** There is no `admins` array on the group. `createdBy` only records who created the group. Rules check admin with one `get()` on the member doc.
+- **At least one admin** is enforced by the Members tab only: the last admin cannot leave or step down. The rules cannot count admins.
+- **Adding several friends** is one batch per friend. A batch can only append one uid, so each person is atomic and a failure does not undo the others.
+- **Admins trust each other.** An admin cannot remove another admin without demoting them first, but any admin can demote another admin.
+- **Archive = read-only.** An archived group cannot be renamed, joined, or have people added. Expense and settlement writes will check the same flag in Phase 4 and 5. Leaving stays possible.
 - Renaming yourself later should update your member doc in each group (one write per group).

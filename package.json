@@ -13,9 +13,10 @@
     "format:check": "prettier --check .",
     "emulators": "firebase emulators:start --only auth,firestore",
     "emulators:persist": "firebase emulators:start --only auth,firestore --import=./emulator-data --export-on-exit",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:run": "vitest run --exclude tests/rules/**",
+    "test:coverage": "vitest run --coverage",
+    "test": "vitest run tests/memberBalance.test.js",
+    "test:rules": "firebase emulators:exec --only firestore \"vitest run tests/rules --reporter=./pass-reporter.js\""
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.6",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.10",

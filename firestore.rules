@@ -2,90 +2,61 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // =====================================================================
+    // Helpers
+    // get() reads the database BEFORE the write. getAfter() and existsAfter()
+    // read it AFTER the whole batch, so a rule can look at what the same batch
+    // changes at the same time.
+    // =====================================================================
     function signedIn() {
       return request.auth != null;
     }
 
-    // get() sees the database BEFORE the write. Use it for existing groups.
-    function isMember(groupId) {
-      return signedIn()
-        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
-    }
-
-    // Same two uids always give the same id, so a pair can only have one friendship doc.
+    // The same two uids always give the same id, so a pair has only one friendship doc.
     function pairKey(a, b) {
       return a < b ? a + '_' + b : b + '_' + a;
     }
 
+    function groupBefore(groupId) {
+      return get(/databases/$(database)/documents/groups/$(groupId)).data;
+    }
+
+    function groupAfter(groupId) {
+      return getAfter(/databases/$(database)/documents/groups/$(groupId)).data;
+    }
+
+    function isMember(groupId) {
+      return signedIn() && request.auth.uid in groupBefore(groupId).memberIds;
+    }
+
+    // Admin = role "admin" on my member doc.
+    function isAdmin(groupId) {
+      return signedIn()
+        && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function areFriends(otherUid) {
+      return signedIn()
+        && get(/databases/$(database)/documents/friendships/$(pairKey(request.auth.uid, otherUid))).data.status == 'accepted';
+    }
+
+    function lastOf(list) {
+      return list[list.size() - 1];
+    }
+
+    // Fields that this update changes (only valid inside an update rule).
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // =====================================================================
+    // Users: each person reads and edits only their own private doc.
+    // =====================================================================
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
     }
 
-    match /groups/{groupId} {
-      allow read: if signedIn() && request.auth.uid in resource.data.memberIds;
-
-      allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(
-             ['name', 'description', 'currency', 'createdBy', 'createdAt', 'archived', 'inviteCode', 'memberIds'])
-        && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.memberIds == [request.auth.uid]
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.archived == false
-        && request.resource.data.name is string
-        && request.resource.data.name.size() >= 2
-        && request.resource.data.name.size() <= 40
-        && request.resource.data.description is string
-        && request.resource.data.description.size() <= 200
-        && request.resource.data.currency in ['PKR', 'USD', 'EUR', 'GBP', 'AED', 'SAR', 'INR']
-        && request.resource.data.inviteCode is string
-        && request.resource.data.inviteCode.size() == 8;
-
-      // Join with an invite: a non-member adds only their own uid to memberIds.
-      // existsAfter() ties it to the member doc created in the SAME batch, and that
-      // member doc rule checks the invite code.
-      allow update: if signedIn()
-        && !(request.auth.uid in resource.data.memberIds)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
-        && request.resource.data.memberIds == resource.data.memberIds.concat([request.auth.uid])
-        && existsAfter(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
-
-      allow delete: if false;
-
-      match /members/{memberId} {
-        allow read: if isMember(groupId);
-
-        // Same batch as the group: the group does not exist yet, so get() would fail.
-        // getAfter() reads the state as it will be once the batch commits.
-        allow create: if signedIn()
-          && memberId == request.auth.uid
-          && request.resource.data.role == 'admin'
-          && getAfter(/databases/$(database)/documents/groups/$(groupId)).data.createdBy == request.auth.uid;
-
-        // Join with an invite code. The group already exists, so get() is right for the code.
-        // getAfter() checks that the same batch adds this uid to memberIds.
-        allow create: if signedIn()
-          && memberId == request.auth.uid
-          && request.resource.data.keys().hasOnly(['name', 'role', 'joinedAt', 'inviteCode'])
-          && request.resource.data.role == 'member'
-          && request.resource.data.inviteCode == get(/databases/$(database)/documents/groups/$(groupId)).data.inviteCode
-          && !(request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds)
-          && request.auth.uid in getAfter(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
-
-        allow update, delete: if false;
-      }
-
-      match /activity/{activityId} {
-        allow read: if isMember(groupId);
-
-        allow create: if signedIn()
-          && request.resource.data.actorId == request.auth.uid
-          && request.auth.uid in getAfter(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
-
-        allow update, delete: if false;
-      }
-    }
-
-    // Public name card. Anyone signed in can get one by uid; nobody can list them.
+    // Public name card. get only, never list. You write only your own.
     match /profiles/{uid} {
       allow get: if signedIn();
       allow list: if false;
@@ -99,7 +70,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Find a person by exact email. get only, never list. Only the owner of the email writes it.
+    // Find a person by exact email. get only, never list. Only the owner of that email writes it.
     match /emailLookup/{email} {
       allow get: if signedIn();
       allow list: if false;
@@ -113,7 +84,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // One doc per pair of people. The requester creates it as pending, the OTHER person accepts.
+    // One doc per pair of people. The sender creates it as pending, the OTHER person accepts.
     match /friendships/{pairId} {
       allow read: if signedIn() && request.auth.uid in resource.data.userIds;
 
@@ -132,7 +103,7 @@ service cloud.firestore {
         && request.auth.uid in resource.data.userIds
         && request.auth.uid != resource.data.requestedBy
         && resource.data.status == 'pending'
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedAt'])
+        && changedKeys().hasOnly(['status', 'acceptedAt'])
         && request.resource.data.status == 'accepted'
         && request.resource.data.acceptedAt == request.time;
 
@@ -140,18 +111,177 @@ service cloud.firestore {
       allow delete: if signedIn() && request.auth.uid in resource.data.userIds;
     }
 
+    // =====================================================================
+    // Groups. Only members read. Only admins edit the group and the roles.
+    // =====================================================================
+    match /groups/{groupId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.memberIds;
+
+      // Create: the creator, as the only member. The member doc and activity are in the same batch.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(
+             ['name', 'description', 'currency', 'createdBy', 'createdAt', 'archived', 'inviteCode', 'memberIds'])
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid]
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.archived == false
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 40
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 200
+        && request.resource.data.currency in ['PKR', 'USD', 'EUR', 'GBP', 'AED', 'SAR', 'INR']
+        && request.resource.data.inviteCode is string
+        && request.resource.data.inviteCode.size() == 8;
+
+      // (a) An admin edits the name, description or archived flag.
+      //     An archived group is read-only: the only allowed change is to un-archive it.
+      allow update: if isAdmin(groupId)
+        && changedKeys().hasOnly(['name', 'description', 'archived'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 40
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 200
+        && request.resource.data.archived is bool
+        && (resource.data.archived == false || changedKeys().hasOnly(['archived']));
+
+      // (b) Exactly one uid is appended to memberIds, and its member doc is created in the same batch.
+      //     Either I join myself (the member doc rule checks the invite code),
+      //     or an admin adds one of their friends. Not allowed while archived.
+      allow update: if signedIn()
+        && resource.data.archived == false
+        && changedKeys().hasOnly(['memberIds'])
+        && request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1
+        && !(lastOf(request.resource.data.memberIds) in resource.data.memberIds)
+        && request.resource.data.memberIds == resource.data.memberIds.concat([lastOf(request.resource.data.memberIds)])
+        && existsAfter(/databases/$(database)/documents/groups/$(groupId)/members/$(lastOf(request.resource.data.memberIds)))
+        && (
+          lastOf(request.resource.data.memberIds) == request.auth.uid
+          || (isAdmin(groupId) && areFriends(lastOf(request.resource.data.memberIds)))
+        );
+
+      // (c) Exactly one uid is removed from memberIds.
+      //     Either I leave (my own member doc is deleted in the same batch),
+      //     or an admin removes someone else (and stays in the group).
+      allow update: if signedIn()
+        && changedKeys().hasOnly(['memberIds'])
+        && resource.data.memberIds.size() == request.resource.data.memberIds.size() + 1
+        && resource.data.memberIds.hasAll(request.resource.data.memberIds)
+        && (
+          (request.auth.uid in resource.data.memberIds
+            && !(request.auth.uid in request.resource.data.memberIds)
+            && !existsAfter(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)))
+          || (request.auth.uid in request.resource.data.memberIds && isAdmin(groupId))
+        );
+
+      allow delete: if false;
+
+      // ---------------------------------------------------------------
+      // Members: the doc id is the member's uid
+      // ---------------------------------------------------------------
+      match /members/{memberId} {
+        allow read: if isMember(groupId);
+
+        // 1) The creator, in the same batch as the group (the group does not exist yet: getAfter).
+        allow create: if signedIn()
+          && memberId == request.auth.uid
+          && request.resource.data.keys().hasOnly(['name', 'role', 'joinedAt'])
+          && request.resource.data.role == 'admin'
+          && groupAfter(groupId).createdBy == request.auth.uid;
+
+        // 2) Join with an invite code: the code travels inside the member doc.
+        allow create: if signedIn()
+          && memberId == request.auth.uid
+          && request.resource.data.keys().hasOnly(['name', 'role', 'joinedAt', 'inviteCode'])
+          && request.resource.data.role == 'member'
+          && request.resource.data.inviteCode == groupBefore(groupId).inviteCode
+          && groupBefore(groupId).archived == false
+          && !(request.auth.uid in groupBefore(groupId).memberIds)
+          && request.auth.uid in groupAfter(groupId).memberIds;
+
+        // 3) An admin adds a friend: an accepted friendship must exist.
+        allow create: if isAdmin(groupId)
+          && memberId != request.auth.uid
+          && request.resource.data.keys().hasOnly(['name', 'role', 'joinedAt'])
+          && request.resource.data.role == 'member'
+          && request.resource.data.name is string
+          && request.resource.data.name.size() <= 80
+          && areFriends(memberId)
+          && groupBefore(groupId).archived == false
+          && !(memberId in groupBefore(groupId).memberIds)
+          && memberId in groupAfter(groupId).memberIds;
+
+        // Roles: only admins change them, and nothing else on the doc.
+        allow update: if isAdmin(groupId)
+          && changedKeys().hasOnly(['role'])
+          && request.resource.data.role in ['admin', 'member'];
+
+        // Leave (only as a plain member: an admin steps down first) or be removed by an admin
+        // (also only a plain member: demote an admin first).
+        allow delete: if signedIn() && (
+          (memberId == request.auth.uid && resource.data.role == 'member')
+          || (isAdmin(groupId) && memberId != request.auth.uid && resource.data.role == 'member')
+        );
+      }
+
+      // ---------------------------------------------------------------
+      // Activity: members read. Create as yourself. Never edited or deleted.
+      // ---------------------------------------------------------------
+      match /activity/{activityId} {
+        allow read: if isMember(groupId);
+
+        // After the batch I am a member (create, join, add) or I was one before it (leave).
+        allow create: if signedIn()
+          && request.resource.data.actorId == request.auth.uid
+          && (
+            request.auth.uid in groupAfter(groupId).memberIds
+            || request.auth.uid in groupBefore(groupId).memberIds
+          );
+
+        allow update, delete: if false;
+      }
+
+      // Members read. Writes come in Phase 4 and 5: members write while the group is not archived.
+      match /expenses/{expenseId} {
+        allow read: if isMember(groupId);
+        allow write: if false;
+      }
+
+      match /settlements/{settlementId} {
+        allow read: if isMember(groupId);
+        allow write: if false;
+      }
+    }
+
+    // =====================================================================
+    // Invites: invites/{code}
+    // =====================================================================
     match /invites/{code} {
       allow get: if signedIn();
       allow list: if false;
 
-      // The group exists by now (step 2), so get() is correct here.
-      // A second set() on an existing code counts as an update, which is denied.
+      // Step 2 of createGroup: the group exists by now, so get() is right.
+      // A second set() on an existing code counts as an update, which is denied below.
       allow create: if signedIn()
         && request.resource.data.createdBy == request.auth.uid
         && get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.createdBy == request.auth.uid
         && get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.inviteCode == code;
 
-      allow update, delete: if false;
+      // Rename: an admin keeps the copy of the group name up to date.
+      allow update: if isAdmin(resource.data.groupId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['groupName'])
+        && request.resource.data.groupName is string
+        && request.resource.data.groupName.size() <= 40;
+
+      allow delete: if false;
+    }
+
+    // =====================================================================
+    // Deny by default: anything not matched above is closed.
+    // =====================================================================
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
