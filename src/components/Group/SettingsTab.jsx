@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuth";
 import { groupSchema } from "../../utils/groupSchema";
 import { setGroupArchived, updateGroupDetails } from "../../services/groupService";
+import ConfirmDialog from "../ConfirmDialog";
 
 // Same rules as the create form, without the currency (it never changes after creation).
 const detailsSchema = groupSchema.pick({ name: true, description: true });
@@ -25,6 +26,7 @@ export default function SettingsTab() {
   const { group, isAdmin, membersLoading } = useOutletContext();
   const { user } = useAuth();
   const [archiving, setArchiving] = useState(false);
+  const [askArchive, setAskArchive] = useState(false); // is the confirm dialog open?
 
   const {
     register,
@@ -62,13 +64,8 @@ export default function SettingsTab() {
     }
   };
 
-  const toggleArchive = async () => {
+  const confirmArchive = async () => {
     const next = !group.archived;
-    const question = next
-      ? "Archive this group? It becomes read-only for everyone. You can unarchive it later."
-      : "Unarchive this group?";
-    if (!window.confirm(question)) return;
-
     setArchiving(true);
     try {
       await setGroupArchived(user, group, next);
@@ -78,6 +75,7 @@ export default function SettingsTab() {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setArchiving(false);
+      setAskArchive(false);
     }
   };
 
@@ -145,13 +143,28 @@ export default function SettingsTab() {
         </p>
         <button
           type="button"
-          onClick={toggleArchive}
+          onClick={() => setAskArchive(true)}
           disabled={archiving}
           className="rounded-xl border border-amber-300 px-5 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-500/30 dark:text-amber-300 dark:hover:bg-white/5"
         >
           {archiving ? "Please wait..." : group.archived ? "Unarchive group" : "Archive group"}
         </button>
       </section>
+
+      <ConfirmDialog
+        open={askArchive}
+        title={group.archived ? "Unarchive this group?" : "Archive this group?"}
+        message={
+          group.archived
+            ? "Everyone will be able to add expenses and change the group again."
+            : "It becomes read-only for everyone. You can unarchive it later."
+        }
+        confirmLabel={group.archived ? "Unarchive" : "Archive"}
+        busyLabel="Please wait..."
+        busy={archiving}
+        onConfirm={confirmArchive}
+        onCancel={() => setAskArchive(false)}
+      />
     </div>
   );
 }

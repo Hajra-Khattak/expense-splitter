@@ -7,6 +7,7 @@ import { acceptFriendRequest, sendFriendRequest } from "../../services/friendSer
 import { leaveGroup, removeMember, setMemberRole } from "../../services/groupService";
 import { initials } from "../../utils/initials";
 import AddMembersDialog from "./AddMembersDialog";
+import ConfirmDialog from "../ConfirmDialog";
 
 const card =
   "rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-[#0c1f17] dark:shadow-none";
@@ -160,6 +161,9 @@ export default function MembersTab() {
   const [busyId, setBusyId] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  // The action waiting for confirmation: { title, message, label, busyLabel, run }
+  const [confirm, setConfirm] = useState(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   // An archived group is read-only: no inviting, adding, removing or role changes.
   const canManage = isAdmin && !group.archived;
@@ -195,27 +199,19 @@ export default function MembersTab() {
     }
   };
 
-  const actions = {
-    addFriend: (m) =>
-      runFor(m, () => sendFriendRequest(user, { uid: m.id, name: m.name }), `Request sent to ${m.name}`),
-    acceptFriend: (m) =>
-      runFor(m, () => acceptFriendRequest(user, m.id), `You and ${m.name} are friends`),
-    makeAdmin: (m) =>
-      runFor(m, () => setMemberRole(user, group, m, "admin"), `${m.name} is now an admin`),
-    makeMember: (m) => {
-      if (!window.confirm(`Make ${m.name} a regular member? They lose admin rights.`)) return;
-      runFor(m, () => setMemberRole(user, group, m, "member"), `${m.name} is now a member`);
-    },
-    remove: (m) => {
-      if (!window.confirm(`Remove ${m.name} from ${group.name}?`)) return;
-      runFor(m, () => removeMember(user, group, m), `${m.name} was removed`);
-    },
+  // Runs the confirmed action. The action handles its own errors with a toast.
+  const runConfirmed = async () => {
+    if (!confirm) return;
+    setConfirmBusy(true);
+    try {
+      await confirm.run();
+    } finally {
+      setConfirmBusy(false);
+      setConfirm(null);
+    }
   };
 
-  const onLeave = async () => {
-    if (iAmLastAdmin) return;
-    if (!window.confirm(`Leave ${group.name}?`)) return;
-
+  const doLeave = async () => {
     setLeaving(true);
     try {
       await leaveGroup(user, group, myRole);
@@ -230,6 +226,42 @@ export default function MembersTab() {
       );
       setLeaving(false);
     }
+  };
+
+  const actions = {
+    addFriend: (m) =>
+      runFor(m, () => sendFriendRequest(user, { uid: m.id, name: m.name }), `Request sent to ${m.name}`),
+    acceptFriend: (m) =>
+      runFor(m, () => acceptFriendRequest(user, m.id), `You and ${m.name} are friends`),
+    makeAdmin: (m) =>
+      runFor(m, () => setMemberRole(user, group, m, "admin"), `${m.name} is now an admin`),
+    makeMember: (m) =>
+      setConfirm({
+        title: "Make a regular member?",
+        message: `${m.name} will lose admin rights.`,
+        label: "Make member",
+        busyLabel: "Saving...",
+        run: () => runFor(m, () => setMemberRole(user, group, m, "member"), `${m.name} is now a member`),
+      }),
+    remove: (m) =>
+      setConfirm({
+        title: "Remove this member?",
+        message: `${m.name} will be removed from ${group.name}. This works only when their balance is settled.`,
+        label: "Remove",
+        busyLabel: "Removing...",
+        run: () => runFor(m, () => removeMember(user, group, m), `${m.name} was removed`),
+      }),
+  };
+
+  const onLeave = () => {
+    if (iAmLastAdmin) return;
+    setConfirm({
+      title: "Leave this group?",
+      message: `You will leave ${group.name}. This works only when your balance is settled.`,
+      label: "Leave",
+      busyLabel: "Leaving...",
+      run: doLeave,
+    });
   };
 
   return (
@@ -308,6 +340,17 @@ export default function MembersTab() {
         onClose={() => setAddOpen(false)}
         group={group}
         friends={friends}
+      />
+
+      <ConfirmDialog
+        open={!!confirm}
+        title={confirm?.title ?? ""}
+        message={confirm?.message ?? ""}
+        confirmLabel={confirm?.label ?? "Confirm"}
+        busyLabel={confirm?.busyLabel}
+        busy={confirmBusy}
+        onConfirm={runConfirmed}
+        onCancel={() => setConfirm(null)}
       />
     </div>
   );

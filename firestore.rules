@@ -54,6 +54,39 @@ service cloud.firestore {
     // =====================================================================
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
+
+            // Personal expenses: private to the owner. No groups, no splits, no balances.
+      match /expenses/{expenseId} {
+        function validPersonal(d) {
+          return d.description is string
+            && d.description.size() >= 1 && d.description.size() <= 100
+            && d.amountMinor is int && d.amountMinor > 0 && d.amountMinor <= 100000000000
+            && d.category in ['food', 'travel', 'rent', 'utilities', 'entertainment', 'other']
+            && d.currency in ['PKR', 'USD', 'EUR', 'GBP', 'AED', 'SAR', 'INR']
+            && d.date is string && d.date.size() == 10
+            && d.note is string && d.note.size() <= 300;
+        }
+
+        allow read: if signedIn() && request.auth.uid == uid;
+
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(
+               ['description', 'amountMinor', 'category', 'date', 'currency', 'note', 'createdAt', 'updatedAt'])
+          && request.resource.data.keys().hasAll(
+               ['description', 'amountMinor', 'category', 'date', 'currency', 'note', 'createdAt', 'updatedAt'])
+          && validPersonal(request.resource.data)
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time;
+
+        allow update: if signedIn() && request.auth.uid == uid
+          && changedKeys().hasOnly(
+               ['description', 'amountMinor', 'category', 'date', 'currency', 'note', 'updatedAt'])
+          && validPersonal(request.resource.data)
+          && request.resource.data.updatedAt == request.time;
+
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
+      
     }
 
     // Public name card. get only, never list. You write only your own.
@@ -233,7 +266,18 @@ service cloud.firestore {
 
         // After the batch I am a member (create, join, add) or I was one before it (leave).
         allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(
+               ['type', 'actorId', 'targetId', 'summary', 'createdAt'])
+          && request.resource.data.keys().hasAll(['type', 'actorId', 'summary', 'createdAt'])
           && request.resource.data.actorId == request.auth.uid
+          && request.resource.data.type in [
+               'group_created', 'group_renamed', 'group_archived', 'group_unarchived',
+               'member_joined', 'member_added', 'member_removed', 'member_left',
+               'role_changed', 'expense_added', 'expense_edited', 'expense_deleted',
+               'settlement_added']
+          && request.resource.data.summary is string
+          && request.resource.data.summary.size() <= 200
+          && request.resource.data.createdAt == request.time
           && (
             request.auth.uid in groupAfter(groupId).memberIds
             || request.auth.uid in groupBefore(groupId).memberIds
@@ -242,16 +286,106 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
-      // Members read. Writes come in Phase 4 and 5: members write while the group is not archived.
+            // ---------------------------------------------------------------
+            // ---------------------------------------------------------------
+      // Expenses (Phase 4). Members read. Members add while the group is not archived.
+      // The creator or an admin edits or soft-deletes. Never hard-deleted.
+      // Rules cannot loop over a map, so "the splits add up to the total" is checked
+      // in the app and in the unit tests. Who is in the expense IS checked here.
+      // ---------------------------------------------------------------
       match /expenses/{expenseId} {
         allow read: if isMember(groupId);
-        allow write: if false;
+
+        function validExpense(d) {
+          return d.description is string
+            && d.description.size() >= 1 && d.description.size() <= 100
+            && d.amountMinor is int && d.amountMinor > 0 && d.amountMinor <= 100000000000
+            && d.category in ['food', 'travel', 'rent', 'utilities', 'entertainment', 'other']
+            && d.date is string && d.date.size() == 10
+            && d.splitType in ['equal', 'exact', 'percent']
+            && d.paidBy is string
+            && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(d.paidBy))
+            && d.participants is list
+            && d.participants.size() >= 1 && d.participants.size() <= 50
+            && d.participants.toSet().difference(groupBefore(groupId).memberIds.toSet()).size() == 0
+            && d.splits is map
+            && d.splits.keys().toSet().difference(d.participants.toSet()).size() == 0
+            && d.participants.toSet().difference(d.splits.keys().toSet()).size() == 0
+            && d.note is string && d.note.size() <= 300;
+        }
+
+        allow create: if isMember(groupId)
+          && groupBefore(groupId).archived == false
+          && request.resource.data.keys().hasOnly(
+               ['description', 'amountMinor', 'category', 'date', 'paidBy', 'participants',
+                'splitType', 'splits', 'note', 'deleted', 'createdBy', 'createdAt', 'updatedAt'])
+          && request.resource.data.keys().hasAll(
+               ['description', 'amountMinor', 'category', 'date', 'paidBy', 'participants',
+                'splitType', 'splits', 'note', 'deleted', 'createdBy', 'createdAt', 'updatedAt'])
+          && validExpense(request.resource.data)
+          && request.resource.data.deleted == false
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time;
+
+        allow update: if isMember(groupId)
+          && groupBefore(groupId).archived == false
+          && resource.data.deleted == false
+          && (resource.data.createdBy == request.auth.uid || isAdmin(groupId))
+          && request.resource.data.updatedAt == request.time
+          && (
+            // edit
+            (changedKeys().hasOnly(
+                ['description', 'amountMinor', 'category', 'date', 'paidBy', 'participants',
+                 'splitType', 'splits', 'note', 'updatedAt'])
+              && validExpense(request.resource.data))
+            ||
+            // soft delete
+            (changedKeys().hasOnly(['deleted', 'deletedBy', 'updatedAt'])
+              && request.resource.data.deleted == true
+              && request.resource.data.deletedBy == request.auth.uid)
+          );
+
+        allow delete: if false;
       }
 
+      // ---------------------------------------------------------------
+      // Settlements (Phase 5). Members read. The payer, the receiver or an admin
+      // records one while the group is not archived. A settlement is a permanent
+      // record: never edited or deleted (a mistake is fixed with an opposite payment).
+      // Rules cannot compute balances, so "not more than the debt" is checked in the form.
+      // ---------------------------------------------------------------
       match /settlements/{settlementId} {
         allow read: if isMember(groupId);
-        allow write: if false;
+
+        function validSettlement(d) {
+          return d.from is string && d.to is string
+            && d.from != d.to
+            && d.from in groupBefore(groupId).memberIds
+            && d.to in groupBefore(groupId).memberIds
+            && d.amountMinor is int && d.amountMinor > 0 && d.amountMinor <= 100000000000
+            && d.date is string && d.date.size() == 10
+            && d.note is string && d.note.size() <= 300;
+        }
+
+        allow create: if isMember(groupId)
+          && groupBefore(groupId).archived == false
+          && request.resource.data.keys().hasOnly(
+               ['from', 'to', 'amountMinor', 'date', 'note', 'createdBy', 'createdAt'])
+          && request.resource.data.keys().hasAll(
+               ['from', 'to', 'amountMinor', 'date', 'note', 'createdBy', 'createdAt'])
+          && validSettlement(request.resource.data)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdAt == request.time
+          && (
+            request.resource.data.from == request.auth.uid
+            || request.resource.data.to == request.auth.uid
+            || isAdmin(groupId)
+          );
+
+        allow update, delete: if false;
       }
+
     }
 
     // =====================================================================

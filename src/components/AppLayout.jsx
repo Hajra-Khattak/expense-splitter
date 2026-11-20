@@ -10,6 +10,7 @@ const icons = {
   plus: 'M12 5v14M5 12h14',
   users: 'M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3Zm0 2c-2.7 0-6 1.3-6 4v2h12v-2c0-2.7-3.3-4-6-4Zm8 0c-.3 0-.6 0-1 .1 1.2.9 2 2.1 2 3.9v2h6v-2c0-2.7-3.3-4-7-4Z',
   user: 'M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4 0-8 2-8 5v1h16v-1c0-3-4-5-8-5Z',
+  wallet: 'M3 7a2 2 0 0 1 2-2h14v14H5a2 2 0 0 1-2-2V7Zm13 6h2',
 }
 
 function Icon({ name }) {
@@ -24,6 +25,7 @@ function Icon({ name }) {
 const navItems = [
   { to: '/app', label: 'Overview', icon: 'home', end: true },
   { to: '/app/groups/new', label: 'New group', icon: 'plus' },
+  { to: '/app/personal', label: 'My expenses', icon: 'wallet' },
   { to: '/app/friends', label: 'Friends', icon: 'users' },
   { to: '/app/profile', label: 'Profile', icon: 'user' },
 ]

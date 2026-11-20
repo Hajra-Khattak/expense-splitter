@@ -15,7 +15,7 @@
     "emulators:persist": "firebase emulators:start --only auth,firestore --import=./emulator-data --export-on-exit",
     "test:run": "vitest run --exclude tests/rules/**",
     "test:coverage": "vitest run --coverage",
-    "test": "vitest run tests/memberBalance.test.js",
+    "test": "vitest run tests/memberBalance.test.js tests/splits.test.js tests/balances.test.js tests/settleUp.test.js tests/stats.test.js",
     "test:rules": "firebase emulators:exec --only firestore \"vitest run tests/rules --reporter=./pass-reporter.js\""
   },
   "dependencies": {

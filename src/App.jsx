@@ -13,22 +13,26 @@ import GroupPage from "./pages/Groups/GroupPage";
 import JoinGroup from "./pages/Groups/JoinGroup";
 import Friends from "./pages/Friends/Friends";
 import AddFriend from "./pages/Friends/AddFriend";
+import ActivityTab from "./components/Group/ActivityTab";
+import StatsTab from "./components/Group/StatsTab";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
 import AppLayout from "./components/AppLayout";
 import MembersTab from "./components/Group/MembersTab";
 import SettingsTab from "./components/Group/SettingsTab";
+import ExpensesTab from "./components/Expenses/ExpensesTab";
+import BalancesTab from "./components/Balances/BalancesTab";
+import SettleUpTab from "./components/Balances/SettleUpTab";
 import TabPlaceholder from "./pages/TabPlaceholder";
 import { useTheme } from "./hooks/useTheme";
+import PersonalExpenses from "./pages/Personal/PersonalExpenses";
 
 // Group tabs that are still empty placeholders
-const PLACEHOLDER_TABS = [
-  ["balances", "Balances"],
-  ["settle-up", "Settle Up"],
-  ["activity", "Activity"],
-  ["stats", "Stats"],
-];
+// const PLACEHOLDER_TABS = [
+//   ["activity", "Activity"],
+//   ["stats", "Stats"],
+// ];
 
 function App() {
   const { theme } = useTheme();
@@ -60,17 +64,21 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="profile" element={<Profile />} />
             <Route path="friends" element={<Friends />} />
+            <Route path="personal" element={<PersonalExpenses />} />
             <Route path="groups/new" element={<CreateGroup />} />
 
             <Route path="groups/:groupId" element={<GroupPage />}>
               <Route index element={<Navigate to="expenses" replace />} />
-              <Route path="expenses" element={<TabPlaceholder title="Expenses" />} 
-              />
+              <Route path="expenses" element={<ExpensesTab />} />
+              <Route path="balances" element={<BalancesTab />} />
+              <Route path="settle-up" element={<SettleUpTab />} />
               <Route path="members" element={<MembersTab />} />
               <Route path="settings" element={<SettingsTab />} />
-              {PLACEHOLDER_TABS.map(([path, title]) => (
+              <Route path="activity" element={<ActivityTab />} />
+<Route path="stats" element={<StatsTab />} />
+              {/* {PLACEHOLDER_TABS.map(([path, title]) => (
                 <Route key={path} path={path} element={<TabPlaceholder title={title} />} />
-              ))}
+              ))} */}
             </Route>
           </Route>
 
