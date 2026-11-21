@@ -23,7 +23,7 @@ export const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null) // the users/{uid} document
+  const [profile, setProfile] = useState(null) 
   const [loading, setLoading] = useState(true)
   const [version, setVersion] = useState(0)
 

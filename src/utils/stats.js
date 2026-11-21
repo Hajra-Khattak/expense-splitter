@@ -1,8 +1,6 @@
-// Pure functions. All sums are integer minor units. Soft-deleted expenses are ignored.
-
 const live = (expenses) => expenses.filter((e) => !e.deleted)
 
-// [{ category, amountMinor }] biggest first
+
 export function spendingByCategory(expenses) {
   const totals = {}
   for (const e of live(expenses)) {
@@ -13,7 +11,6 @@ export function spendingByCategory(expenses) {
     .sort((a, b) => b.amountMinor - a.amountMinor)
 }
 
-// [{ month: 'YYYY-MM', amountMinor }] oldest first (date is a YYYY-MM-DD string)
 export function spendingByMonth(expenses) {
   const totals = {}
   for (const e of live(expenses)) {
@@ -25,8 +22,7 @@ export function spendingByMonth(expenses) {
     .sort((a, b) => (a.month < b.month ? -1 : a.month > b.month ? 1 : 0))
 }
 
-// [{ id, paid, share, difference }]: paid = what they paid out, share = what they owe
-// for expenses. difference = paid - share (expenses only; settlements are not included).
+
 export function perMemberSummary(expenses) {
   const rows = {}
   const row = (id) => (rows[id] ??= { id, paid: 0, share: 0 })

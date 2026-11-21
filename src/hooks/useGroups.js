@@ -5,15 +5,15 @@ import { useAuth } from "./useAuth";
 
 export function useGroups() {
   const { user } = useAuth();
-  const uid = user?.uid; // depend on the string, not the user object
+  const uid = user?.uid; 
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!uid) return; // ProtectedRoute guarantees a user on the dashboard
+    if (!uid) return; 
 
-    // Needs the composite index: memberIds (array-contains) + createdAt (desc)
+
     const q = query(
       collection(db, "groups"),
       where("memberIds", "array-contains", uid),
@@ -28,14 +28,14 @@ export function useGroups() {
         setLoading(false);
       },
       (err) => {
-        // failed-precondition = missing index; the message contains the link to create it
+        
         console.error(err.code, err.message);
         setError(err);
         setLoading(false);
       }
     );
 
-    return unsubscribe; // stop listening on unmount or when uid changes
+    return unsubscribe; 
   }, [uid]);
 
   return { groups, loading, error };

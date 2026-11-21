@@ -11,7 +11,7 @@ export function useGroup(groupId) {
     const unsubscribe = onSnapshot(
       doc(db, "groups", groupId),
       (snap) => {
-        // console.log("useGroup", groupId, snap.exists(), snap.metadata.fromCache);
+      
         setGroup(snap.exists() ? { id: snap.id, ...snap.data() } : null);
         setLoading(false);
       },

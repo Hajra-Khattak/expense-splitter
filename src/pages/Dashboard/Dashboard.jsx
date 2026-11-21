@@ -15,9 +15,6 @@ import { useAuth } from '../../hooks/useAuth'
 import { useTheme } from '../../hooks/useTheme'
 import { useGroups } from '../../hooks/useGroups'
 
-/* ---------- helpers ---------- */
-// All money is stored in minor units (12.50 -> 1250). Format only for display.
-// Later, move this into utils/money.js.
 const formatMoney = (minor, currency = 'PKR') =>
   new Intl.NumberFormat('en-PK', {
     style: 'currency',
@@ -25,9 +22,7 @@ const formatMoney = (minor, currency = 'PKR') =>
     maximumFractionDigits: 0,
   }).format(minor / 100)
 
-/* ---------- mock data (replace with hooks later) ---------- */
-// Money stats, chart, expenses and payments stay mock until Phases 4 and 5.
-// Groups are real now: they come from useGroups().
+
 const moneyStats = [
   { label: 'Net balance', value: 135000, hint: 'Across all groups', tone: 'good' },
   { label: 'You are owed', value: 210000, hint: 'From 3 people', tone: 'good' },
@@ -64,7 +59,6 @@ const payments = [
   { id: 3, who: 'Hamza', direction: 'receive', amount: 170000, group: 'Flat 12B' },
 ]
 
-/* ---------- shared class names (light first, dark: overrides) ---------- */
 const card =
   'rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-[#0c1f17] dark:shadow-none'
 const title = 'font-semibold text-gray-900 dark:text-white'
@@ -75,7 +69,7 @@ const row = 'rounded-xl bg-green-50 dark:bg-white/[0.03]'
 const good = 'text-emerald-600 dark:text-emerald-300'
 const bad = 'text-rose-600 dark:text-rose-400'
 
-/* ---------- small pieces ---------- */
+
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   return (
@@ -88,7 +82,7 @@ function ChartTooltip({ active, payload, label }) {
   )
 }
 
-// Real groups list: handles loading, error and empty states.
+
 function GroupsPanel({ groups, loading, error, uid }) {
   if (loading) {
     return (
@@ -164,7 +158,7 @@ function GroupsPanel({ groups, loading, error, uid }) {
   )
 }
 
-/* ---------- page ---------- */
+
 export default function Dashboard() {
   const { user } = useAuth()
   const { isDark } = useTheme()
@@ -173,7 +167,7 @@ export default function Dashboard() {
   const firstName = user?.displayName?.split(' ')[0] || 'there'
   const totalSpent = categories.reduce((sum, c) => sum + c.value, 0)
 
-  // Real group numbers
+ 
   const activeCount = groups.filter((g) => !g.archived).length
   const archivedCount = groups.length - activeCount
   const createdCount = groups.filter((g) => g.createdBy === user?.uid).length
@@ -189,13 +183,12 @@ export default function Dashboard() {
     },
   ]
 
-  // Recharts draws with SVG attributes, so it can't use Tailwind dark: classes.
   const axisColor = isDark ? '#6ee7b7' : '#047857'
   const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(16,185,129,0.15)'
 
   return (
     <div>
-      {/* Page header */}
+      
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Overview</h1>
@@ -225,7 +218,7 @@ export default function Dashboard() {
       <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
         {/* Left column */}
         <div className="min-w-0 space-y-5">
-          {/* Stats */}
+         
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((s) => (
               <div key={s.label} className={card}>
@@ -242,7 +235,7 @@ export default function Dashboard() {
             ))}
           </section>
 
-          {/* Chart */}
+         
           <section className={card}>
             <div className="mb-4 flex items-center justify-between">
               <div>
@@ -276,7 +269,7 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* Bottom row */}
+         
           <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
             <section className={card}>
               <div className="mb-4 flex items-center justify-between">
@@ -359,7 +352,7 @@ export default function Dashboard() {
             </ul>
           </section>
 
-          {/* Real groups from Firestore */}
+          
           <section className={card}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className={title}>

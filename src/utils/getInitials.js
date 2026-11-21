@@ -1,5 +1,4 @@
-// "Ali Khan" -> "AK", "ali" -> "A", "" -> "?"
-// Array.from splits by real characters, so emoji and non-Latin letters do not break.
+
 export function getInitials(name) {
   const words = String(name ?? '')
     .trim()

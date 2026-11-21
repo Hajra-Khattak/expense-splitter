@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react'
 import { collection, onSnapshot } from 'firebase/firestore'
-import { db } from '../services/firebase' // same import path as useExpenses.js
+import { db } from '../services/firebase' 
 
-// ALL expenses and settlements of one group, in real time. Balances need the full
-// history, so there is no pagination here. Use this hook only on the Balances and
-// Settle Up tabs (one read per document each time the tab opens) to protect the
-// free read quota.
+
 export function useGroupLedger(groupId) {
   const [expenses, setExpenses] = useState([])
   const [settlements, setSettlements] = useState([])

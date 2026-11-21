@@ -12,12 +12,12 @@ export default function ConfirmDialog({
 }) {
   const cancelRef = useRef(null);
 
-  // Focus the safe button when the dialog opens.
+
   useEffect(() => {
     if (open) cancelRef.current?.focus();
   }, [open]);
 
-  // Escape closes the dialog (unless a request is running).
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {

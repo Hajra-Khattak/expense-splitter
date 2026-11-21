@@ -8,21 +8,18 @@ function readLocalTheme() {
     const saved = localStorage.getItem('theme')
     if (saved === 'light' || saved === 'dark') return saved
   } catch {
-    // storage can be blocked
+   
   }
   return 'light'
 }
 
-// Returns the profile data, or null if the document does not exist.
+
 export async function getUserProfile(uid) {
   const snap = await getDoc(userRef(uid))
   return snap.exists() ? snap.data() : null
 }
 
-// Creates users/{uid} only if it is missing, and never overwrites an existing one
-// (so a later login does not reset the person's currency or theme).
-// `name` is passed in because firebaseUser.displayName can still be null
-// right after email signup, before updateProfile has finished.
+
 export async function createUserDocIfMissing(firebaseUser, name) {
   const existing = await getUserProfile(firebaseUser.uid)
   if (existing) return existing
@@ -40,7 +37,7 @@ export async function createUserDocIfMissing(firebaseUser, name) {
   return data
 }
 
-// Merges fields into users/{uid} (creates it if it is somehow missing).
+
 export function updateUserDoc(uid, fields) {
   return setDoc(userRef(uid), fields, { merge: true })
 }

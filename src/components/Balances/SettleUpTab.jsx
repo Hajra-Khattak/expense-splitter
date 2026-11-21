@@ -9,6 +9,7 @@ import { formatMinor } from "../../utils/minorUnits";
 import { reverseSettlement } from "../../services/settlementUndo";
 import SettlementForm from "./SettlementForm";
 import ConfirmDialog from "../ConfirmDialog";
+import { downloadMemberPdf } from "../../utils/groupPdf";
 
 const card =
   "rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-[#0c1f17] dark:shadow-none";
@@ -25,11 +26,12 @@ export default function SettleUpTab() {
   const { group, members, membersLoading, membersError, isAdmin } = useOutletContext();
   const { expenses, settlements, loading, error } = useGroupLedger(groupId);
 
-  // null = form closed, {} = empty form, { from, to, amountMinor } = prefilled from a suggestion
+  
   const [form, setForm] = useState(null);
-  const [mode, setMode] = useState("simplified"); // "simplified" or "original"
-  const [toUndo, setToUndo] = useState(null); // the settlement waiting for confirmation
+  const [mode, setMode] = useState("simplified"); 
+  const [toUndo, setToUndo] = useState(null); 
   const [undoing, setUndoing] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   const net = useMemo(() => computeBalances(expenses, settlements), [expenses, settlements]);
   const simplified = useMemo(() => simplifyDebts(net), [net]);
@@ -40,7 +42,7 @@ export default function SettleUpTab() {
     () => [...settlements].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
     [settlements]
   );
-  // Ids of payments that already have a reversal.
+  
   const reversedIds = useMemo(() => {
     const ids = new Set();
     for (const s of settlements) {
@@ -54,7 +56,6 @@ export default function SettleUpTab() {
   const money = (minor) => formatMinor(minor, group.currency);
   const canRecord = (from, to) =>
     !group.archived && (isAdmin || from === user.uid || to === user.uid);
-  // Same condition as the rules (payer, receiver or admin), and the recorder can undo too.
   const canUndo = (s) =>
     !group.archived &&
     !REVERSAL.test(s.note ?? "") &&
@@ -62,6 +63,26 @@ export default function SettleUpTab() {
     (isAdmin || s.createdBy === user.uid) &&
     (isAdmin || s.from === user.uid || s.to === user.uid);
 
+
+    async function exportPdf() {
+  setPdfBusy(true);
+  try {
+    await downloadMemberPdf({
+      group,
+      me: { id: user.uid, name: nameOf(user.uid) },
+      nameOf,
+      net,
+      suggestions: simplified,
+      expenses,
+      settlements,
+    });
+  } catch (err) {
+    console.error("pdf failed", err);
+    toast.error("Could not create the PDF.");
+  } finally {
+    setPdfBusy(false);
+  }
+}
   async function confirmUndo() {
     if (!toUndo) return;
     setUndoing(true);
@@ -110,11 +131,18 @@ export default function SettleUpTab() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {mode === "simplified" ? "Suggested payments" : "Original debts"}
           </h2>
+          <div className="flex flex-wrap  ">
+
           {!form && !group.archived && (
             <button type="button" className={btnPrimary} onClick={() => setForm({})}>
               Record a payment
             </button>
           )}
+          <button type="button" className={`ml-3 px-4 py-2 rounded-lg text-white hover:bg-yellow-700 transition-colors bg-yellow-800`} onClick={exportPdf} disabled={pdfBusy}>
+  {pdfBusy ? "Creating..." : "Download my PDF"}
+</button>
+          </div>
+
         </div>
 
         <div className="mt-3 flex gap-2" role="group" aria-label="Debt view">

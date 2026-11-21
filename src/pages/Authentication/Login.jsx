@@ -8,9 +8,7 @@ import { getAuthError } from '../../utils/authErrors'
 import { useAuth } from '../../hooks/useAuth'
 import ThemeToggle from '../../components/ThemeToggle'
 
-// On login we only check that the fields are filled in.
-// We do NOT enforce "min 6" here: the server decides if the password is right,
-// and login should not reveal your password rules.
+
 const loginSchema = z.object({
   email: z
     .string()
@@ -28,7 +26,6 @@ export default function Login() {
   const location = useLocation()
   const { user, loading: authLoading, login, loginWithGoogle } = useAuth()
 
-  // If a protected page sent the person here, go back to it after login.
   const from = location.state?.from?.pathname || '/app'
 
   const {
@@ -48,7 +45,7 @@ export default function Login() {
     try {
       await login(data.email, data.password, data.remember)
       toast.success('Login successful!')
-      // no navigate here: the effect below runs when `user` appears
+      
     } catch (err) {
       setError('root.serverError', { message: getAuthError(err) })
     }
@@ -79,7 +76,7 @@ export default function Login() {
 
   return (
     <div className=" flex min-h-screen items-center justify-center bg-green-50 p-4 dark:bg-[#06150f]">
-      {/* Theme toggle */}
+    
 
       
       <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl bg-white shadow-xl dark:bg-[#0c1f17] dark:shadow-none dark:ring-1 dark:ring-white/5 md:grid-cols-2">
@@ -187,7 +184,7 @@ export default function Login() {
               noValidate
               className="space-y-5"
             >
-              {/* Email */}
+              
               <div>
                 <label htmlFor="email" className={labelClass}>
                   Email Address
@@ -208,7 +205,7 @@ export default function Login() {
                 )}
               </div>
 
-              {/* Password */}
+              
               <div>
                 <label htmlFor="password" className={labelClass}>
                   Password
@@ -238,7 +235,7 @@ export default function Login() {
                 )}
               </div>
 
-              {/* Remember Me */}
+             
               <div className="flex justify-between -mt-2">
               <div className="flex items-center gap-2">
                 <input
@@ -255,7 +252,7 @@ export default function Login() {
                 </label>
               </div>
 
-{/* Forgot Password */}
+
 <div className="flex justify-end ">
   <Link
     to="/forgot-password"
@@ -267,7 +264,7 @@ export default function Login() {
 </div>
 
 
-              {/* Server / Firebase error */}
+              
               {errors.root?.serverError && (
                 <p
                   role="alert"
@@ -277,7 +274,7 @@ export default function Login() {
                 </p>
               )}
 
-              {/* Submit */}
+             
               <button
                 type="submit"
                 disabled={busy}
@@ -287,7 +284,7 @@ export default function Login() {
               </button>
             </form>
 
-            {/* Signup Link */}
+            
             <p className="mt-8 text-center text-sm text-gray-500 dark:text-green-300/70">
               Don't have an account?{' '}
               <Link

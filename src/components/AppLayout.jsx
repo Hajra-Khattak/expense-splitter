@@ -21,7 +21,7 @@ function Icon({ name }) {
   )
 }
 
-// later: Groups, Balances, Stats
+
 const navItems = [
   { to: '/app', label: 'Overview', icon: 'home', end: true },
   { to: '/app/groups/new', label: 'New group', icon: 'plus' },
@@ -32,14 +32,14 @@ const navItems = [
 
 const STORAGE_KEY = 'sidebar-collapsed'
 
-// Remember the choice on this device. Default: collapsed (icons only).
+
 function getInitialCollapsed() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved === 'true') return true
     if (saved === 'false') return false
   } catch {
-    // storage can be blocked
+    
   }
   return true
 }
@@ -69,19 +69,18 @@ function Logo() {
 }
 
 export default function AppLayout() {
-  const [open, setOpen] = useState(false) // mobile drawer
-  const [collapsed, setCollapsed] = useState(getInitialCollapsed) // desktop sidebar
+  const [open, setOpen] = useState(false) 
+  const [collapsed, setCollapsed] = useState(getInitialCollapsed) 
 
-  // Save the desktop sidebar choice.
+  
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, String(collapsed))
     } catch {
-      // ignore
+      
     }
   }, [collapsed])
 
-  // Close the mobile drawer with Escape (only listen while it is open).
   useEffect(() => {
     if (!open) return
     const onKeyDown = (e) => {
@@ -103,7 +102,7 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-green-50 text-gray-800 dark:bg-[#06150f] dark:text-green-50">
-      {/* Navbar */}
+      
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-emerald-100 bg-white/90 px-4 backdrop-blur dark:border-white/5 dark:bg-[#08190f]/90 sm:px-6">
         <div className="flex items-center gap-3">
           <button
@@ -127,7 +126,6 @@ useEffect(() => {
         </div>
       </header>
 
-      {/* Dark overlay behind the drawer (small screens only) */}
       {open && (
         <div
           className="fixed inset-0 z-30 bg-black/50 md:hidden"
@@ -136,14 +134,14 @@ useEffect(() => {
         />
       )}
 
-      {/* Navigation: a drawer on small screens, a collapsible sidebar from md up */}
+     
       <aside
         id="app-nav"
         className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-emerald-100 bg-white p-4 transition-[transform,width] duration-200 dark:border-white/5 dark:bg-[#08190f] md:visible md:top-16 md:z-20 md:translate-x-0 ${
           collapsed ? 'md:w-20' : 'md:w-64'
         } ${open ? 'visible translate-x-0' : 'invisible -translate-x-full'}`}
       >
-        {/* Drawer header (small screens only) */}
+       
         <div className="mb-6 flex items-center justify-between md:hidden">
           <Logo />
           <button
@@ -170,7 +168,7 @@ useEffect(() => {
               className={linkClass(collapsed)}
             >
               <Icon name={item.icon} />
-              {/* The label is always visible in the mobile drawer, and hidden on desktop when collapsed */}
+              
               <span className={`truncate ${collapsed ? 'md:hidden' : ''}`}>
                 {item.label}
               </span>
@@ -178,7 +176,7 @@ useEffect(() => {
           ))}
         </nav>
 
-        {/* Collapse / expand button (desktop only) */}
+       
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
@@ -205,7 +203,6 @@ useEffect(() => {
         </button>
       </aside>
 
-      {/* Page content: the left margin follows the sidebar width */}
       <main
         className={`min-w-0 p-4 transition-[margin] duration-200 sm:p-6 lg:p-8 ${
           collapsed ? 'md:ml-20' : 'md:ml-64'

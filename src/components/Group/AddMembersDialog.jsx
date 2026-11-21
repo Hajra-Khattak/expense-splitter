@@ -10,8 +10,7 @@ const primaryBtn =
 const ghostBtn =
   "rounded-xl border border-emerald-200 bg-white px-5 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-transparent dark:text-emerald-300 dark:hover:bg-white/5";
 
-// A pop-up list of my friends who are not in the group yet. Tick one or more, then Add.
-// Uses the native <dialog>, which closes with Escape and keeps keyboard focus inside.
+
 export default function AddMembersDialog({ open, onClose, group, friends }) {
   const { user } = useAuth();
   const dialogRef = useRef(null);
@@ -41,7 +40,7 @@ export default function AddMembersDialog({ open, onClose, group, friends }) {
     let added = 0;
     const failed = [];
 
-    // One batch per person: if one fails, the others are still added.
+   
     for (const friend of picked) {
       try {
         await addFriendToGroup(user, group, friend);
@@ -68,7 +67,7 @@ export default function AddMembersDialog({ open, onClose, group, friends }) {
       ref={dialogRef}
       onClose={handleClose}
       onClick={(e) => {
-        // a click on the dark backdrop targets the dialog element itself
+        
         if (e.target === dialogRef.current) onClose();
       }}
       aria-labelledby="add-members-title"

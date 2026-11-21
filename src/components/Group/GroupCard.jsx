@@ -12,7 +12,7 @@ export default function GroupCard({ group }) {
       <p className="mt-1 text-sm text-gray-500 dark:text-green-300/70">
         {count} member{count === 1 ? "" : "s"} · {group.currency}
       </p>
-      {/* Net balance per group is added in Phase 5, from balances.js */}
+      
     </Link>
   );
 }

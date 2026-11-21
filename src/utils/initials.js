@@ -1,4 +1,4 @@
-// "hajra p" -> "HP". If you already have utils/getInitials, you can use that instead.
+
 export function initials(name = "") {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";

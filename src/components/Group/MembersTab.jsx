@@ -26,7 +26,6 @@ const smallDanger =
   "rounded-lg px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-rose-400 dark:hover:bg-white/5";
 
 function formatJoined(joinedAt) {
-  // joinedAt is null for a moment right after a write (pending server timestamp)
   if (!joinedAt?.toDate) return "";
   return joinedAt.toDate().toLocaleDateString("en-GB", {
     day: "numeric",
@@ -35,7 +34,7 @@ function formatJoined(joinedAt) {
   });
 }
 
-// What I can do about another member as a person: nothing, add them as a friend, or accept.
+
 function FriendAction({ relation, busy, onAdd, onAccept }) {
   if (relation === "friend") {
     return <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">Friend</span>;
@@ -161,11 +160,10 @@ export default function MembersTab() {
   const [busyId, setBusyId] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  // The action waiting for confirmation: { title, message, label, busyLabel, run }
   const [confirm, setConfirm] = useState(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
 
-  // An archived group is read-only: no inviting, adding, removing or role changes.
+
   const canManage = isAdmin && !group.archived;
   const adminCount = members.filter((m) => m.role === "admin").length;
   const iAmLastAdmin = isAdmin && adminCount <= 1;
@@ -176,12 +174,12 @@ export default function MembersTab() {
       await navigator.clipboard.writeText(inviteLink);
       toast.success("Link copied");
     } catch {
-      // clipboard can be blocked; the link is selectable in the box
+
       toast.error("Could not copy. Select the link and copy it by hand.");
     }
   };
 
-  // Runs one action for one member and disables that member's buttons meanwhile.
+
   const runFor = async (member, action, successMessage) => {
     setBusyId(member.id);
     try {
@@ -199,7 +197,7 @@ export default function MembersTab() {
     }
   };
 
-  // Runs the confirmed action. The action handles its own errors with a toast.
+
   const runConfirmed = async () => {
     if (!confirm) return;
     setConfirmBusy(true);
@@ -266,7 +264,7 @@ export default function MembersTab() {
 
   return (
     <div className="mt-6 space-y-5">
-      {/* Only admins add people, and not while the group is archived */}
+     
       {canManage && (
         <section className={card}>
           <div className="flex flex-wrap items-start justify-between gap-3">

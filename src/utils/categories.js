@@ -1,6 +1,5 @@
 import { Utensils, Plane, Home, Zap, Film, Tag } from 'lucide-react'
 
-// The ids here MUST match the category list in firestore.rules (expValid).
 export const CATEGORIES = [
   { id: 'food', label: 'Food', icon: Utensils, color: 'text-orange-600 dark:text-orange-300' },
   { id: 'travel', label: 'Travel', icon: Plane, color: 'text-sky-600 dark:text-sky-300' },

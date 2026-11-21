@@ -17,12 +17,12 @@ export default function JoinGroup() {
   const navigate = useNavigate();
   const { groups, loading: groupsLoading } = useGroups();
 
-  const [status, setStatus] = useState("loading"); // loading | ready | invalid | error
+  const [status, setStatus] = useState("loading"); 
   const [invite, setInvite] = useState(null);
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
 
-  // Read the invite once (it holds the group id and a copy of the group name).
+ 
   useEffect(() => {
     let cancelled = false;
     getInvite(code)
@@ -40,7 +40,7 @@ export default function JoinGroup() {
     };
   }, [code]);
 
-  // A non-member cannot read the member doc, so use the groups list I already listen to.
+  
   const alreadyMember = !!invite && groups.some((g) => g.id === invite.groupId);
   const groupName = invite?.groupName ?? "this group";
 

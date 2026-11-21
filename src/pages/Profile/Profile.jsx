@@ -29,7 +29,7 @@ export default function Profile() {
     defaultValues: { name: user?.displayName ?? '' },
   })
 
-  // The avatar previews the initials while you type.
+
   const liveName = watch('name')
 
   const onSubmit = async ({ name }) => {
@@ -98,7 +98,7 @@ export default function Profile() {
             )}
           </div>
 
-          {/* Email is read-only: changing it needs re-authentication */}
+      
           <div>
             <label htmlFor="email" className={labelClass}>
               Email

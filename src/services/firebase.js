@@ -19,7 +19,7 @@ export const db = getFirestore(app);
 const useEmulators =
   import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS === "true";
 
-// Guard against Vite hot reload connecting twice (Firestore throws if it does)
+
 if (useEmulators && !globalThis.__EMULATORS_CONNECTED__) {
   // connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
   // connectFirestoreEmulator(db, "127.0.0.1", 8080);

@@ -1,10 +1,9 @@
 import { collection, doc, serverTimestamp, writeBatch } from 'firebase/firestore'
 import { db } from './firebase'
 
-const today = () => new Date().toLocaleDateString('en-CA') // YYYY-MM-DD, local time
+const today = () => new Date().toLocaleDateString('en-CA') 
 
-// Undo = a NEW settlement in the opposite direction. Nothing is edited or deleted.
-// One batch: the reversal + an activity entry.
+
 export async function reverseSettlement(groupId, user, settlement) {
   const ref = doc(collection(db, 'groups', groupId, 'settlements'))
   const batch = writeBatch(db)

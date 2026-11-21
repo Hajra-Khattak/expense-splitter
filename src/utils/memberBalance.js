@@ -1,12 +1,4 @@
-// Net balance of one member, in minor units.
-//   positive = the group owes this member money
-//   negative = this member owes the group money
-//   0        = settled
-//
-// expense:    { paidBy, amountMinor, splits: { uid: shareMinor } }
-// settlement: { from, to, amountMinor }          (from paid to)
-//
-// If your tested utils/balances.js already computes this, call it from here instead.
+
 export function getMemberBalance(uid, expenses, settlements) {
   let net = 0;
 

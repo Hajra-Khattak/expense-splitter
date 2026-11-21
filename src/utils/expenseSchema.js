@@ -3,8 +3,7 @@ import { CATEGORY_IDS } from './categories'
 import { toMinor, fromMinor } from './minorUnits'
 import { equalSplit, exactSplit, percentSplit } from './splits'
 
-// Build the schema for a currency (digits = 2 for USD, 0 for JPY ...).
-// The form keeps everything as strings; buildExpenseSplits() turns it into minor units.
+
 export function makeExpenseSchema(digits = 2) {
   return z
     .object({
@@ -67,7 +66,7 @@ export function makeExpenseSchema(digits = 2) {
     })
 }
 
-// Turn validated form values into { amountMinor, splits }. Throws if the sum is off.
+
 export function buildExpenseSplits(values, digits = 2) {
   const amountMinor = toMinor(values.amount, digits)
   const ids = values.participants

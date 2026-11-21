@@ -10,6 +10,7 @@ import { formatMinor } from "../../utils/minorUnits";
 import ExpenseForm from "./ExpenseForm";
 import { EMPTY_FILTERS, SORTS, filterExpenses } from "../../utils/expenseFilters";
 import ConfirmDialog from "../ConfirmDialog";
+import GroupImport from "../Group/GroupImport";
 
 
 const btnPrimary =
@@ -98,6 +99,9 @@ const [deleting, setDeleting] = useState(false);
           Add expense
         </button>
       )}
+      {isAdmin && !group.archived && !showForm && !editing && (
+  <GroupImport groupId={groupId} group={group} members={members} user={user} onImported={refresh} />
+)}
 
       {(showForm || editing) && (
         <ExpenseForm
@@ -135,7 +139,7 @@ const [deleting, setDeleting] = useState(false);
 {!loading && !error && expenses.length > 0 && (
   <div className="grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-[#0c1f17] sm:grid-cols-2 lg:grid-cols-3">
 
-    {/* Search */}
+    
     <input
       type="text"
       placeholder="Search expenses..."
@@ -144,7 +148,7 @@ const [deleting, setDeleting] = useState(false);
       className={inputCls}
     />
 
-    {/* From date */}
+    
     <input
       type="date"
       value={filters.from}
@@ -152,7 +156,7 @@ const [deleting, setDeleting] = useState(false);
        className={inputCls}
     />
 
-    {/* To date */}
+   
     <input
       type="date"
       value={filters.to}
@@ -160,7 +164,7 @@ const [deleting, setDeleting] = useState(false);
        className={inputCls}
     />
 
-    {/* Category */}
+    
     <select
       value={filters.category}
       onChange={setFilter("category")}
@@ -181,7 +185,7 @@ const [deleting, setDeleting] = useState(false);
       ))}
     </select>
 
-    {/* Paid by */}
+   
     <select
       value={filters.paidBy}
       onChange={setFilter("paidBy")}
@@ -202,7 +206,7 @@ const [deleting, setDeleting] = useState(false);
       ))}
     </select>
 
-    {/* Sort */}
+  
     <select
       value={filters.sort}
       onChange={setFilter("sort")}
@@ -229,7 +233,7 @@ const [deleting, setDeleting] = useState(false);
   </div>
 )}
 
-      {/* Expenses exist, but filters return no results */}
+    
 {!loading && !error && expenses.length > 0 && visible.length === 0 && (
   <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-10 text-center dark:border-white/10 dark:bg-[#0c1f17]">
     <p className="font-semibold text-gray-900 dark:text-white">

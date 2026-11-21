@@ -1,8 +1,4 @@
-// Greedy debt simplification with two max-heaps.
-// Each step pays the biggest debtor's debt to the biggest creditor, so at least one
-// person is fully settled per payment: at most n - 1 payments for n people.
 
-// "a is above b": bigger amount first, ties broken by id so results are repeatable.
 const higher = (a, b) => a.amount > b.amount || (a.amount === b.amount && a.id < b.id)
 
 class MaxHeap {
@@ -49,8 +45,7 @@ class MaxHeap {
   }
 }
 
-// net: { uid: minor units }, positive = is owed, negative = owes.
-// Returns [{ from, to, amountMinor }] meaning "from pays to".
+
 export function simplifyDebts(net) {
   const creditors = new MaxHeap()
   const debtors = new MaxHeap()

@@ -40,7 +40,7 @@ export default function AddFriend() {
     };
   }, [targetUid]);
 
-  const relation = relations[targetUid]; // "friend" | "incoming" | "outgoing" | undefined
+  const relation = relations[targetUid]; 
   const name = profile?.name ?? "this person";
 
   const act = async (action, successMessage) => {

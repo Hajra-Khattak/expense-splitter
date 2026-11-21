@@ -14,7 +14,6 @@ export default function UserMenu() {
   const name = user?.displayName || 'Account'
   const initial = getInitials(user?.displayName)
 
-  // Close when clicking outside or pressing Escape.
   useEffect(() => {
     if (!open) return
 

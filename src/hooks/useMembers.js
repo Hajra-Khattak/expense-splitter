@@ -10,13 +10,13 @@ export function useMembers(groupId) {
   useEffect(() => {
     if (!groupId) return;
 
-    // One orderBy on a single field: no composite index needed
+   
     const q = query(collection(db, "groups", groupId, "members"), orderBy("joinedAt"));
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        // the doc id is the member's uid
+
         setMembers(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
         setError(null);
         setLoading(false);
@@ -28,7 +28,7 @@ export function useMembers(groupId) {
       }
     );
 
-    return unsubscribe; // stop listening on unmount or when groupId changes
+    return unsubscribe; 
   }, [groupId]);
 
   return { members, loading, error };

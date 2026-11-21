@@ -13,7 +13,6 @@ export function useFriendships() {
   useEffect(() => {
     if (!uid) return;
 
-    // One array-contains filter and no orderBy: no composite index needed
     const q = query(collection(db, "friendships"), where("userIds", "array-contains", uid));
 
     const unsubscribe = onSnapshot(
@@ -49,7 +48,6 @@ export function useFriendships() {
     const incomingList = list.filter((f) => f.status === "pending" && !f.requestedByMe).sort(byName);
     const outgoingList = list.filter((f) => f.status === "pending" && f.requestedByMe).sort(byName);
 
-    // otherUid -> "friend" | "incoming" | "outgoing"   (missing = no relation)
     const map = {};
     friendsList.forEach((f) => (map[f.otherId] = "friend"));
     incomingList.forEach((f) => (map[f.otherId] = "incoming"));

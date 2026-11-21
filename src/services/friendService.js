@@ -4,8 +4,7 @@ import { pairId } from "../utils/pairId";
 
 const nameOf = (user) => user.displayName || user.email || "Unknown";
 
-// Public name card (profiles/{uid}) and email lookup (emailLookup/{email}).
-// Called once per login from AppLayout. Takes a plain object so the effect stays simple.
+
 export async function ensureProfile({ uid, displayName, email, photoURL }) {
   const name = displayName || email || "Unknown";
 

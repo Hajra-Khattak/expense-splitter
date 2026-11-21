@@ -8,7 +8,7 @@ import { groupSchema } from "../../utils/groupSchema";
 import { setGroupArchived, updateGroupDetails } from "../../services/groupService";
 import ConfirmDialog from "../ConfirmDialog";
 
-// Same rules as the create form, without the currency (it never changes after creation).
+
 const detailsSchema = groupSchema.pick({ name: true, description: true });
 
 const card =
@@ -26,7 +26,7 @@ export default function SettingsTab() {
   const { group, isAdmin, membersLoading } = useOutletContext();
   const { user } = useAuth();
   const [archiving, setArchiving] = useState(false);
-  const [askArchive, setAskArchive] = useState(false); // is the confirm dialog open?
+  const [askArchive, setAskArchive] = useState(false); 
 
   const {
     register,
@@ -57,7 +57,7 @@ export default function SettingsTab() {
     try {
       await updateGroupDetails(user, group, values);
       toast.success("Group updated");
-      reset(values); // the saved values become the new starting point
+      reset(values); 
     } catch (err) {
       console.error(err.code, err.message);
       setError("root.serverError", { message: "Could not save the changes. Please try again." });

@@ -1,4 +1,4 @@
-const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0, O, 1, I
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 export function generateInviteCode(length = 8) {
   const bytes = new Uint8Array(length);

@@ -33,7 +33,6 @@ export default function BalancesTab() {
     );
   }
 
-  // Every current member, plus anyone who still has a balance (a former member).
   const ids = [...new Set([...members.map((m) => m.id), ...Object.keys(net)])];
   const rows = ids
     .map((id) => ({ id, value: net[id] ?? 0 }))

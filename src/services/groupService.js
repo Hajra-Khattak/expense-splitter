@@ -24,7 +24,7 @@ function codeError(code, message) {
   return err;
 }
 
-// One activity entry. The caller adds it to a batch.
+
 function activityData(user, type, targetId, summary) {
   return { type, actorId: user.uid, targetId, summary, createdAt: serverTimestamp() };
 }
@@ -33,7 +33,6 @@ function activityData(user, type, targetId, summary) {
 /* Create                                                             */
 /* ------------------------------------------------------------------ */
 
-// Pre-check: pick a code that has no invites/{code} doc yet.
 async function findFreeInviteCode() {
   for (let i = 0; i < MAX_CODE_ATTEMPTS; i++) {
     const code = generateInviteCode();
@@ -43,8 +42,7 @@ async function findFreeInviteCode() {
   throw new Error("Could not find a free invite code");
 }
 
-// Returns { groupId, inviteSaved }.
-// Step 1: one batch (group + creator member + activity). Step 2: the invite doc.
+
 export async function createGroup(user, { name, description, currency }) {
   const inviteCode = await findFreeInviteCode();
   const displayName = nameOf(user);
@@ -77,14 +75,14 @@ export async function createGroup(user, { name, description, currency }) {
     activityData(user, "group_created", null, `${displayName} created the group "${name}"`)
   );
 
-  await batch.commit(); // all three writes succeed together, or none do
+  await batch.commit(); 
 
-  // Step 2: the group already exists, so a failure here must not hide it.
+
   let inviteSaved = true;
   try {
     await setDoc(doc(db, "invites", inviteCode), {
       groupId: groupRef.id,
-      groupName: name, // non-members cannot read the group doc, so the join page needs this copy
+      groupName: name, 
       createdBy: user.uid,
       createdAt: serverTimestamp(),
     });
@@ -100,7 +98,7 @@ export async function createGroup(user, { name, description, currency }) {
 /* Join by link                                                       */
 /* ------------------------------------------------------------------ */
 
-// Reads the invite doc for the join page. Returns null when the code does not exist.
+
 export async function getInvite(rawCode) {
   const code = rawCode.trim().toUpperCase();
   const snap = await getDoc(doc(db, "invites", code));
@@ -109,8 +107,7 @@ export async function getInvite(rawCode) {
   return { code, groupId, groupName: groupName ?? null };
 }
 
-// One batch: add the uid to memberIds, create the member doc, write an activity entry.
-// The rules check the invite code that is sent inside the member doc.
+
 export async function joinGroup(user, rawCode) {
   const invite = await getInvite(rawCode);
   if (!invite) throw codeError("invalid-invite", "Invalid invite link");
@@ -128,7 +125,7 @@ export async function joinGroup(user, rawCode) {
     name: displayName,
     role: "member",
     joinedAt: serverTimestamp(),
-    inviteCode: code, // proof for the rules
+    inviteCode: code, 
   });
   batch.set(activityRef, activityData(user, "member_joined", user.uid, `${displayName} joined the group`));
 
@@ -140,8 +137,7 @@ export async function joinGroup(user, rawCode) {
 /* Balance check (used before remove and leave)                       */
 /* ------------------------------------------------------------------ */
 
-// Reads the group's expenses and settlements and returns one member's net balance.
-// If a read fails, this throws, so the caller stops (the safe default).
+
 export async function getUnsettledBalance(groupId, uid) {
   const [expenseSnap, settlementSnap] = await Promise.all([
     getDocs(collection(db, "groups", groupId, "expenses")),
@@ -164,8 +160,6 @@ async function assertSettled(groupId, uid) {
 /* Members                                                            */
 /* ------------------------------------------------------------------ */
 
-// An admin adds one friend. For several friends, call this once per friend:
-// each person is one atomic batch.  friend = { otherId, name }
 export async function addFriendToGroup(admin, group, friend) {
   const groupRef = doc(db, "groups", group.id);
   const memberRef = doc(db, "groups", group.id, "members", friend.otherId);
@@ -181,7 +175,7 @@ export async function addFriendToGroup(admin, group, friend) {
   await batch.commit();
 }
 
-// An admin removes a plain member. Allowed only when that member's balance is 0.
+
 export async function removeMember(admin, group, member) {
   await assertSettled(group.id, member.id);
 
@@ -199,9 +193,7 @@ export async function removeMember(admin, group, member) {
   await batch.commit();
 }
 
-// I leave the group. Allowed only when my balance is 0.
-// The caller makes sure I am not the last admin. An admin steps down first,
-// because the rules let only a plain member delete their own member doc.
+
 export async function leaveGroup(user, group, myRole) {
   await assertSettled(group.id, user.uid);
 
@@ -220,7 +212,7 @@ export async function leaveGroup(user, group, myRole) {
   await batch.commit();
 }
 
-// Make a member an admin, or an admin a plain member. Only admins may do this.
+
 export async function setMemberRole(admin, group, member, role) {
   const memberRef = doc(db, "groups", group.id, "members", member.id);
   const activityRef = doc(collection(db, "groups", group.id, "activity"));
@@ -236,11 +228,8 @@ export async function setMemberRole(admin, group, member, role) {
   await batch.commit();
 }
 
-/* ------------------------------------------------------------------ */
-/* Group settings                                                     */
-/* ------------------------------------------------------------------ */
 
-// Rename and/or change the description. If the name changes, the copy on the invite doc follows.
+
 export async function updateGroupDetails(admin, group, { name, description }) {
   const changes = {};
   if (name !== group.name) changes.name = name;
@@ -252,7 +241,7 @@ export async function updateGroupDetails(admin, group, { name, description }) {
   batch.update(groupRef, changes);
 
   if (changes.name) {
-    // Groups whose invite step failed have no invite doc, so check first.
+  
     const inviteRef = doc(db, "invites", group.inviteCode);
     const inviteSnap = await getDoc(inviteRef);
     if (inviteSnap.exists()) batch.update(inviteRef, { groupName: name });
@@ -267,7 +256,7 @@ export async function updateGroupDetails(admin, group, { name, description }) {
   await batch.commit();
 }
 
-// Archive = read-only for everyone. An admin can un-archive it.
+
 export async function setGroupArchived(admin, group, archived) {
   const groupRef = doc(db, "groups", group.id);
   const activityRef = doc(collection(db, "groups", group.id, "activity"));

@@ -16,7 +16,7 @@ export default function GroupPage() {
   const { groupId } = useParams();
   const { user } = useAuth();
   const { group, loading, error } = useGroup(groupId);
-  // Loaded once here and shared with the tabs through the Outlet context
+
   const { members, loading: membersLoading, error: membersError } = useMembers(groupId);
 
   if (loading) {

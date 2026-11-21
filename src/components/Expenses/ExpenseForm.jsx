@@ -15,8 +15,8 @@ const errCls = 'mt-1 text-xs text-red-600 dark:text-red-400'
 const selectCls = inputCls + ' dark:scheme-dark'
 const optionCls = 'bg-white text-gray-900 dark:bg-[#0c1f17] dark:text-white'
 
-const uidOf = (m) => m.uid ?? m.id // member docs are stored at members/{uid}
-const today = () => new Date().toLocaleDateString('en-CA') // YYYY-MM-DD, local time
+const uidOf = (m) => m.uid ?? m.id 
+const today = () => new Date().toLocaleDateString('en-CA') 
 
 function toFormValues(initial, digits, members, user) {
   if (!initial) {
@@ -46,7 +46,6 @@ function toFormValues(initial, digits, members, user) {
     exact: Object.fromEntries(
       Object.entries(initial.splits).map(([id, v]) => [id, fromMinor(v, digits)])
     ),
-    // Original percentages are not stored, so they are rebuilt from the amounts (rounded).
     percent: Object.fromEntries(
       Object.entries(initial.splits).map(([id, v]) => [id, fromMinor(Math.round((v * 10000) / total), 2)])
     ),
@@ -81,7 +80,7 @@ export default function ExpenseForm({
   const values = watch()
   const participants = values.participants ?? []
 
-  // Live preview: only when the whole form is valid.
+ 
   let preview = null
   const parsed = schema.safeParse(values)
   if (parsed.success) {

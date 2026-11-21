@@ -9,14 +9,13 @@
 // }
 
 
-// Pure split logic. Every function returns { uid: minor units } that adds up to
-// totalMinor EXACTLY (no cent is ever lost or invented).
+
 
 export function sumSplits(splits) {
   return Object.values(splits).reduce((s, v) => s + v, 0)
 }
 
-// Equal split. The leftover cents go one each to the first people in uid order.
+
 export function equalSplit(totalMinor, participantIds) {
   const ids = [...participantIds].sort()
   if (ids.length === 0) throw new Error('Pick at least one person')
@@ -30,15 +29,13 @@ export function equalSplit(totalMinor, participantIds) {
   return out
 }
 
-// Exact split. `amounts` is { uid: minor units }. Must already add up to the total.
+
 export function exactSplit(totalMinor, amounts) {
   const sum = sumSplits(amounts)
   if (sum !== totalMinor) throw new Error('Amounts must add up to the total')
   return { ...amounts }
 }
 
-// Percent split. `basisPoints` is { uid: integer } where 10000 = 100%.
-// (33.33% is 3333.) Uses the largest-remainder method so the total is exact.
 export function percentSplit(totalMinor, basisPoints) {
   const ids = Object.keys(basisPoints).sort()
   const bpSum = ids.reduce((s, id) => s + basisPoints[id], 0)
@@ -59,9 +56,7 @@ export function percentSplit(totalMinor, basisPoints) {
   return Object.fromEntries(rows.map((r) => [r.id, r.share]))
 }
 
-// Net position per person from a list of expenses: paid minus owed.
-// Positive = is owed money, negative = owes money. Deleted expenses are ignored.
-// (Used by tests now, and by balances.js in Phase 5.)
+
 export function netFromExpenses(expenses) {
   const net = {}
   for (const e of expenses) {

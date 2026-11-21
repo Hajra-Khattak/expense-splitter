@@ -115,7 +115,6 @@ export default function Friends() {
     }
   };
 
-  // Runs one action for one person and disables that person's buttons meanwhile.
   const run = async (otherId, action, successMessage) => {
     setBusyId(otherId);
     try {

@@ -4,9 +4,6 @@ import { db } from '../services/firebase' // adjust if your export name differs
 
 const PAGE_SIZE = 20
 
-// Pages of expenses, newest date first. Uses getDocs (not onSnapshot), so call
-// refresh() after you add, edit or delete. A single orderBy needs no composite index.
-// Soft-deleted expenses are hidden here; hasMore is based on the raw page size.
 export function useExpenses(groupId) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)

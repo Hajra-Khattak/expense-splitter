@@ -57,7 +57,7 @@ export default function Signup() {
       await loginWithGoogle()
     } catch (err) {
       const message = getAuthError(err)
-      // empty message means "ignore" (for example, a cancelled popup request)
+      
       if (message) setError('root.serverError', { message })
     } finally {
       setGoogleLoading(false)
@@ -176,7 +176,7 @@ export default function Signup() {
               noValidate
               className="space-y-4"
             >
-              {/* Name */}
+             
               <div>
                 <label htmlFor="name" className={labelClass}>
                   Full Name
@@ -197,7 +197,7 @@ export default function Signup() {
                 )}
               </div>
 
-              {/* Email */}
+          
               <div>
                 <label htmlFor="email" className={labelClass}>
                   Email Address
@@ -218,7 +218,7 @@ export default function Signup() {
                 )}
               </div>
 
-              {/* Password */}
+              
               <div>
                 <label htmlFor="password" className={labelClass}>
                   Password
@@ -248,7 +248,7 @@ export default function Signup() {
                 )}
               </div>
 
-              {/* Confirm Password */}
+            
               <div>
                 <label htmlFor="confirmPassword" className={labelClass}>
                   Confirm Password
@@ -278,7 +278,7 @@ export default function Signup() {
                 )}
               </div>
 
-              {/* Server / Firebase error */}
+              
               {errors.root?.serverError && (
                 <p
                   role="alert"
@@ -288,7 +288,7 @@ export default function Signup() {
                 </p>
               )}
 
-              {/* Submit */}
+             
               <button
                 type="submit"
                 disabled={busy}

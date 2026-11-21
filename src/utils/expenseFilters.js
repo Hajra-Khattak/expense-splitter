@@ -14,8 +14,7 @@ export const EMPTY_FILTERS = {
   sort: 'date-desc',
 }
 
-// Works only on the expenses already loaded in the browser (no extra reads).
-// Dates are YYYY-MM-DD strings, so plain string comparison is correct.
+
 export function filterExpenses(expenses, f) {
   const text = f.text.trim().toLowerCase()
 

@@ -15,7 +15,6 @@ const optionCls = "bg-white text-gray-900 dark:bg-[#0c1f17] dark:text-white";
 
 const today = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD, local time
 
-// Props: net = { uid: minor } from computeBalances; prefill = { from, to, amountMinor } or null.
 export default function SettlementForm({ groupId, group, members, user, isAdmin, net, prefill, onSaved, onCancel }) {
   const digits = currencyDigits(group.currency);
   const schema = useMemo(() => makeSettlementSchema(digits), [digits]);

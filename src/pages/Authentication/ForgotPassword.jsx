@@ -51,11 +51,11 @@ export default function ForgotPassword() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-green-50 p-4 dark:bg-[#06150f]">
-      {/* Theme toggle */}
+  
     
 
       <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl bg-white shadow-xl dark:bg-[#0c1f17] dark:shadow-none dark:ring-1 dark:ring-white/5 md:grid-cols-2">
-        {/* Left Section */}
+     
         <div className="hidden flex-col justify-between bg-gradient-to-br from-emerald-700 to-green-950 p-12 text-white md:flex">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">SplitEase.</h1>
@@ -94,7 +94,7 @@ export default function ForgotPassword() {
         <ThemeToggle />
       </div>
           <div className="w-full max-w-md">
-            {/* Icon */}
+            
             <div className="mb-7 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -113,7 +113,7 @@ export default function ForgotPassword() {
               </svg>
             </div>
 
-            {/* Heading */}
+           
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
                 Forgot password?
@@ -124,7 +124,7 @@ export default function ForgotPassword() {
               </p>
             </div>
 
-            {/* Form */}
+            
             <form
               onSubmit={handleSubmit(onSubmit)}
               noValidate
@@ -163,7 +163,7 @@ export default function ForgotPassword() {
                 </p>
               )}
 
-              {/* Success */}
+             
               {sentTo && (
                 <div
                   role="status"
